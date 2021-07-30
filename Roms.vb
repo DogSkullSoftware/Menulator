@@ -44,6 +44,13 @@ Module Module1
     <Extension> Public Function Combine(LWord As Short, HWord As Short) As Integer
         Return HWord << 8 Or LWord
     End Function
+
+    Public Function EnumerateFiles(strFolder As String, extensions As String, Optional searchOption As FileIO.SearchOption = FileIO.SearchOption.SearchAllSubDirectories) As ObjectModel.ReadOnlyCollection(Of String)
+
+
+        'FileIO.FileSystem.GetDirectories(strFolder)
+        Return FileIO.FileSystem.GetFiles(strFolder, searchOption, Split(extensions, ";"))
+    End Function
 End Module
 
 
@@ -213,27 +220,28 @@ ReadThatByte:
 
 
 
+
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.smc;*.sfc;*.fig", Optional filter As Func(Of SnesROM, Boolean) = Nothing) As List(Of SnesROM)
-        Dim sourceDirectory As New DirectoryInfo(strRomPath)
-        If filter Is Nothing Then filter = Function(r As SnesROM) True
+        '    Dim sourceDirectory As New DirectoryInfo(strRomPath)
+        '    If filter Is Nothing Then filter = Function(r As SnesROM) True
 
 
-        Dim i As IEnumerable(Of SnesROM) = (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                                               End Function)) Select z = New SnesROM(a.FullName, "") Where filter(z))
+        '    Dim i As IEnumerable(Of SnesROM) = (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                                               Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                                                           End Function)) Select z = New SnesROM(a.FullName, "") Where filter(z))
 
-        If filter IsNot Nothing Then
-            i = (From a In i Where filter(a))
+        '    If filter IsNot Nothing Then
+        '        i = (From a In i Where filter(a))
+        '    End If
+        '    Return i.ToList
+        'End Function
+        If filter Is Nothing Then
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New SnesROM(a, "")).ToList
+        Else
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New SnesROM(a, "") Where filter(z)).ToList
+
         End If
-        Return i.ToList
     End Function
-    'If filter Is Nothing Then
-    'Return (From a In sourceDirectory Select New SnesROM(a.ToString, "")).ToList
-    'Else
-    'Return (From a In sourceDirectory Select z = New SnesROM(a.ToString, "") Where filter(z)).ToList
-
-    'End If
-    'End Function
 
 End Class
 Public Class NesROM
@@ -294,9 +302,9 @@ Public Class NesROM
     End Sub
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.nes", Optional filter As Func(Of NesROM, Boolean) = Nothing) As List(Of NesROM)
         If filter Is Nothing Then
-            Return (From a In IO.Directory.EnumerateFiles(strRomPath, extensions, SearchOption.AllDirectories) Select New NesROM(a.ToString)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New NesROM(a)).ToList
         Else
-            Return (From a In IO.Directory.EnumerateFiles(strRomPath, extensions, SearchOption.AllDirectories) Select z = New NesROM(a.ToString) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New NesROM(a) Where filter(z)).ToList
 
         End If
     End Function
@@ -413,16 +421,23 @@ Public Class SmsRom
     Public Property Favorite As Boolean Implements IRom.Favorite
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.sms;*.gen;*.32x;*.bin", Optional filter As Func(Of SmsRom, Boolean) = Nothing) As List(Of SmsRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function) Where Not (a.FullName.Contains("(Track") And Not a.FullName.Contains("(Track 1)"))) Select New SmsRom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Where Not (a.FullName.Contains("(Track") And Not a.FullName.Contains("(Track 1)")) Select z = New SmsRom(a.FullName) Where filter(z)).ToList
+        '    'Return From a In i Where filter(a) Select a
+        'End If
+
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function) Where Not (a.FullName.Contains("(Track") And Not a.FullName.Contains("(Track 1)"))) Select New SmsRom(a.FullName)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Where Not (a.Contains("(Track") And Not a.Contains("(Track 1)")) Select New SmsRom(a)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Where Not (a.FullName.Contains("(Track") And Not a.FullName.Contains("(Track 1)")) Select z = New SmsRom(a.FullName) Where filter(z)).ToList
-            'Return From a In i Where filter(a) Select a
+            Return (From a In EnumerateFiles(strRomPath, extensions) Where Not (a.Contains("(Track") And Not a.Contains("(Track 1)")) Select z = New SmsRom(a) Where filter(z)).ToList
+
         End If
     End Function
 End Class
@@ -506,15 +521,22 @@ Public Class GBRom
 
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.gb;*.gbc", Optional filter As Func(Of GBRom, Boolean) = Nothing) As List(Of GBRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New GBRom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New GBRom(a.FullName) Where filter(z)).ToList
+
+        'End If
+
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New GBRom(a.FullName)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New GBRom(a)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New GBRom(a.FullName) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New GBRom(a) Where filter(z)).ToList
 
         End If
     End Function
@@ -604,15 +626,21 @@ Public Class GBARom
 
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.gba", Optional filter As Func(Of GBARom, Boolean) = Nothing) As List(Of GBARom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New GBARom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New GBARom(a.FullName) Where filter(z))
+
+        'End If
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New GBARom(a.FullName)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New GBARom(a)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New GBARom(a.FullName) Where filter(z))
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New GBARom(a) Where filter(z)).ToList
 
         End If
     End Function
@@ -872,15 +900,21 @@ Public Class DSRom
 
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.nds;*.ds;*.gba;*.fig", Optional filter As Func(Of DSRom, Boolean) = Nothing) As List(Of DSRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New DSRom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New DSRom(a.FullName) Where filter(z)).ToList
+
+        'End If
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New DSRom(a.FullName)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New DSRom(a)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New DSRom(a.FullName) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New DSRom(a) Where filter(z)).ToList
 
         End If
     End Function
@@ -942,15 +976,21 @@ Public Class WiiRom
 
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.iso", Optional filter As Func(Of WiiRom, Boolean) = Nothing) As List(Of WiiRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New WiiRom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New WiiRom(a.FullName) Where filter(z)).ToList
+
+        'End If
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New WiiRom(a.FullName)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New WiiRom(a)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New WiiRom(a.FullName) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New WiiRom(a) Where filter(z)).ToList
 
         End If
     End Function
@@ -1054,16 +1094,22 @@ Public Class N64Rom
 
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.z64;*.rom;*.n64;*.v64", Optional filter As Func(Of N64Rom, Boolean) = Nothing) As List(Of N64Rom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
-        If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New N64Rom(a.FullName)).ToList
-        Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New N64Rom(a.FullName) Where filter(z)).ToList
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New N64Rom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New N64Rom(a.FullName) Where filter(z)).ToList
 
+
+        'End If
+        If filter Is Nothing Then
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New N64Rom(a)).ToList
+        Else
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New N64Rom(a) Where filter(z)).ToList
 
         End If
     End Function
@@ -1185,31 +1231,42 @@ Public Class PSxRom
 
 
     Public Shared Function CreateSearcherPSx(strRomPath As String, Optional extensions As String = "*.iso;*.bin;*.img;*.mds", Optional filter As Func(Of PSxRom, Boolean) = Nothing) As List(Of PSxRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New PSxRom(a.FullName, &H9318)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New PSxRom(a.FullName, &H9318) Where filter(z)).ToList
+
+        'End If
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New PSxRom(a.FullName, &H9318)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New PSxRom(a, &H9318)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New PSxRom(a.FullName, &H9318) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New PSxRom(a, &H9318) Where filter(z)).ToList
 
         End If
-
     End Function
 
     Public Shared Function CreateSearcherPS2(strRomPath As String, Optional extensions As String = "*.iso;*.bin;*.img;*.mds", Optional filter As Func(Of PSxRom, Boolean) = Nothing) As List(Of PSxRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
-        If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New PSxRom(a.FullName, &H8000)).ToList
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New PSxRom(a.FullName, &H8000)).ToList
 
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New PSxRom(a.FullName, &H8000) Where filter(z)).ToList
+
+        'End If
+        If filter Is Nothing Then
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New PSxRom(a, &H8000)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New PSxRom(a.FullName, &H8000) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New PSxRom(a, &H8000) Where filter(z)).ToList
 
         End If
     End Function
@@ -1684,15 +1741,21 @@ Public Class DCRom
 
 
     Public Shared Function CreateSearcher(strRomPath As String, Optional extensions As String = "*.cdi;*.iso;*.bin", Optional filter As Func(Of DCRom, Boolean) = Nothing) As List(Of DCRom)
-        Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'Dim sourceDirectory = New DirectoryInfo(strRomPath)
+        'If filter Is Nothing Then
+        '    Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                                   Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                               End Function)) Select New DCRom(a.FullName)).ToList
+        'Else
+        '    Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
+        '                                                                        Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
+        '                                                                    End Function) Select z = New DCRom(a.FullName) Where filter(z)).ToList
+
+        'End If
         If filter Is Nothing Then
-            Return (From a In (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                           Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                                       End Function)) Select New DCRom(a.FullName)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select New DCRom(a)).ToList
         Else
-            Return (From a In extensions.Split(";").SelectMany(Of FileInfo)(Function(b As String) As IEnumerable(Of FileInfo)
-                                                                                Return sourceDirectory.EnumerateFiles(b, SearchOption.AllDirectories)
-                                                                            End Function) Select z = New DCRom(a.FullName) Where filter(z)).ToList
+            Return (From a In EnumerateFiles(strRomPath, extensions) Select z = New DCRom(a) Where filter(z)).ToList
 
         End If
     End Function
