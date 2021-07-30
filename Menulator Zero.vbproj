@@ -1,0 +1,485 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{BA755A90-D897-4D9B-B4B7-F415D78086D5}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <StartupObject>Sub Main</StartupObject>
+    <RootNamespace>Menulator_Zero</RootNamespace>
+    <AssemblyName>Menulator Zero</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>WindowsFormsWithCustomSubMain</MyType>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>Menulator Zero.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>Menulator Zero.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>Off</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>m.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
+    <Reference Include="XInput1, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\XInput1\XInput1\bin\Debug\XInput1.exe</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Xml.Linq" />
+    <Import Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ApplicationEvents.vb" />
+    <Compile Include="clsMameInput.vb" />
+    <Compile Include="clsMenulatorListView.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="clsSystemIcons.vb" />
+    <Compile Include="Form1.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form1.Designer.vb">
+      <DependentUpon>Form1.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmMenulator.Designer.vb">
+      <DependentUpon>frmMenulator.vb</DependentUpon>
+    </Compile>
+    <Compile Include="frmMenulator.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmMsg.Designer.vb">
+      <DependentUpon>frmMsg.vb</DependentUpon>
+    </Compile>
+    <Compile Include="frmMsg.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="JoyApi\JoyApi.vb" />
+    <Compile Include="JoyApi\JoystickWindow.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="keybd_event\HARDWAREINPUT.vb" />
+    <Compile Include="keybd_event\Input.vb" />
+    <Compile Include="keybd_event\InputSimulator.vb" />
+    <Compile Include="keybd_event\InputType.vb" />
+    <Compile Include="keybd_event\KeyboardFlag.vb" />
+    <Compile Include="keybd_event\KeyboardInput.vb" />
+    <Compile Include="keybd_event\MouseFlag.vb" />
+    <Compile Include="keybd_event\MouseInput.vb" />
+    <Compile Include="keybd_event\MOUSEKEYBOARDHARDWAREINPUT.vb" />
+    <Compile Include="keybd_event\VirtualKeyCodes.vb" />
+    <Compile Include="keybd_event\XButton.vb" />
+    <Compile Include="KeyInput.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="NewUIListItem.Designer.vb">
+      <DependentUpon>NewUIListItem.vb</DependentUpon>
+    </Compile>
+    <Compile Include="NewUIListItem.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Panels\clsRangeNumber_Properties.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Panels\clsRangeText_Properties.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Panels\clsCombobox_Properties.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Panels\clsTextbox_Properties.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Roms.vb" />
+    <Compile Include="Test.Designer.vb">
+      <DependentUpon>Test.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Test.vb">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmMenulator.resx">
+      <DependentUpon>frmMenulator.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmMsg.resx">
+      <DependentUpon>frmMsg.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NewUIListItem.resx">
+      <DependentUpon>NewUIListItem.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Panels\clsRangeNumber_Properties.resx">
+      <DependentUpon>clsRangeNumber_Properties.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Panels\clsRangeText_Properties.resx">
+      <DependentUpon>clsRangeText_Properties.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Panels\clsCombobox_Properties.resx">
+      <DependentUpon>clsCombobox_Properties.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Panels\clsTextbox_Properties.resx">
+      <DependentUpon>clsTextbox_Properties.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Test.resx">
+      <DependentUpon>Test.vb</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="My Project\app.manifest" />
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MameLib2010\MameLib2016.vbproj">
+      <Project>{c6d5953a-05ec-445d-8931-0bcd34b6dc7e}</Project>
+      <Name>MameLib2016</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\MAME.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.6">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.6 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\find.editbox.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\find.editbox.nofocus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\edit.caret.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\globalsettings.tile.focus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\globalsettings.tile.nofocus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\globalsettings.tile.select.focus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\globalsettings.tile.select.nofocus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\COMMON.BUTTON.FIRSTRUN.NOFOCUS.FULL.PNG" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\GUIDE.BUTTON.FOCUS.PNG" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.back.disabled.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.back.dormant.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.back.focus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.back.focusoverlay.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.back.nofocus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.forward.disabled.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.forward.dormant.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.forward.focus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.forward.focusoverlay.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\spinner.arrow.forward.nofocus.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\busy.back.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\busy.front.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\GLOBALSETTINGS.TILE.DISABLED.PNG" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\globalsettings.tile.select.disabled.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\35244.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\35245.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\35246.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\35247.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\35248.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\m.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Menulator3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-games.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-audio.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-globe.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-gotostart.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-settings2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-help.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-folder.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\icon-wm10-clear.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\660px-DSLite_white_trans.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\dreamcast.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Games_for_Windows_logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gba.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gbc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gbx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gen32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gencd.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\gg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\jag.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\lynx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\n64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\nes.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ps2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\psx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\saturn.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\sms.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\snes.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\notifications.powermenu.icon.close.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\notifications.powermenu.icon.logoff.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\notifications.powermenu.icon.restart.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\notifications.powermenu.icon.shutdown.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\notifications.powermenu.icon.standby.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\appbar.disk.download.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\appbar.disk.upload.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\appbar.refresh.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\appbar.close.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Sony-PSP-1000-Body.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\PS3-slim-hor-icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="m.ico" />
+    <None Include="Resources\joystick.png" />
+    <None Include="Resources\blueload2.png" />
+    <None Include="Resources\PinClipart.com_ground-hog-day-clip_1980971.png" />
+    <None Include="Resources\NicePng_loading-png_132412.png" />
+    <None Include="Resources\busy.back2.png" />
+    <None Include="Resources\-favorite-border_90060.png" />
+    <None Include="Resources\wiiu.png" />
+    <None Include="Resources\240px-Wii_console.png" />
+    <None Include="Resources\controls_pause_32.png" />
+    <None Include="Resources\icons8-window-settings-32.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
