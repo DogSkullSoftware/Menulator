@@ -652,14 +652,16 @@ theend:
                 e.Handled = True
             Case Keys.Return
                 If _AppsMenuParentIndex <> -1 Then
-                    AppsMenu(_AppsMenuIndex).PerformClick()
-
-                    _AppsMenuParentIndex = -1
-                    _AppsMenuIndex = 0
-                    Refresh()
+                    Dim result As New NewUIListItem.NewUIListItemClickedEvent
+                    AppsMenu(_AppsMenuIndex).PerformClick(result)
+                    If result.CloseMenu Then
+                        _AppsMenuParentIndex = -1
+                        _AppsMenuIndex = 0
+                        Refresh()
+                    End If
                     e.Handled = True
-                End If
-            Case Keys.Apps
+                    End If
+                    Case Keys.Apps
                 If _AppsMenuParentIndex = -1 Then
                     _AppsMenuParentIndex = _Index
 

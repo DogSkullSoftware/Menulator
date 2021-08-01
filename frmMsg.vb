@@ -11,7 +11,7 @@ Public Class frmMsg
 
         ' Add any initialization after the InitializeComponent() call.
         Me.EnableBlur()
-        Font = New Font("Malgun Gothic", 18.0F)
+        Font = New Font("Malgun Gothic", 25.0F)
         SetStyle(ControlStyles.UserPaint, True)
         SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
         SetStyle(ControlStyles.SupportsTransparentBackColor, True)
@@ -121,9 +121,11 @@ Public Class frmMsg
         'msg = strMsg
         Text = Title
         Label1.Text = strMsg
-        Size = TextRenderer.MeasureText(strMsg, Font, Size, TextFormatFlags.LeftAndRightPadding Or TextFormatFlags.TextBoxControl)
-        Width += 32
-        Height += 54 + 25 + 12 + 12
+        Dim testRect = ClientSize
+        testRect = TextRenderer.MeasureText(strMsg, Font, testRect, TextFormatFlags.NoClipping)
+
+        'Width += 32
+        Height += 54 + 25
     End Sub
 
     Public Shared Function Msgbox(strMsg As String, Optional buttons As MsgBoxStyle = MsgBoxStyle.ApplicationModal Or MsgBoxStyle.OkOnly, Optional Title As String = "") As MsgBoxResult

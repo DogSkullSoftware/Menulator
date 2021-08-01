@@ -10,13 +10,13 @@ Public Class NewUIListItem
         ' Add any initialization after the InitializeComponent() call.
         Me.DoubleBuffered = True
     End Sub
-    Public Sub New(strText As String, img As Image, onclick As EventHandler)
+    Public Sub New(strText As String, img As Image, onclick As EventHandler(Of NewUIListItemClickedEvent))
         Me.New
         Text = strText
         Image = img
         ClickHandler = onclick
     End Sub
-    Public Sub New(strText As String, img As Image, onclick As EventHandler, altonclick As EventHandler)
+    Public Sub New(strText As String, img As Image, onclick As EventHandler(Of NewUIListItemClickedEvent), altonclick As EventHandler(Of NewUIListItemClickedEvent))
         Me.New
         Text = strText
         Image = img
@@ -42,21 +42,40 @@ Public Class NewUIListItem
 
         End Set
     End Property
-    Public Property ClickHandler As EventHandler
+    Public Property ClickHandler As EventHandler(Of NewUIListItemClickedEvent)
+    Public Class NewUIListItemClickedEvent
+        Inherits EventArgs
+        Public CloseMenu As Boolean = True
+        Public Handled As Boolean = True
+        Public CloseAllMenu As Boolean = False
+        Public Sub New()
+
+        End Sub
+        Public Sub New(a As NewUIListItemClickedEvent)
+            Me.New
+            Me.CloseMenu = a.CloseMenu
+            Me.Handled = a.Handled
+        End Sub
+    End Class
     Protected Overrides Sub OnClick(e As EventArgs)
-        PerformClick()
+        PerformClick(e)
     End Sub
-    Public Sub PerformClick()
+    Public Sub PerformClick(ByVal e As NewUIListItemClickedEvent)
         If ClickHandler IsNot Nothing Then
-            ClickHandler.Invoke(Me, Nothing)
+
+            ClickHandler.Invoke(Me, e)
+        Else
+            e.CloseMenu = False
         End If
     End Sub
 
-    Public Property AltClickHandler As EventHandler
+    Public Property AltClickHandler As EventHandler(Of NewUIListItemClickedEvent)
 
-    Public Sub PerformAltClick()
+    Public Sub PerformAltClick(ByVal e As NewUIListItemClickedEvent)
         If AltClickHandler IsNot Nothing Then
-            AltClickHandler.Invoke(Me, Nothing)
+            AltClickHandler.Invoke(Me, e)
+        Else
+            e.CloseMenu = False
         End If
     End Sub
 
