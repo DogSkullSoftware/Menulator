@@ -132,7 +132,21 @@ Public Class Form1
 
 
     Dim myGamesMenu As New Dictionary(Of String, NewUIListItem)
-    Dim myEmulatorList As New Dictionary(Of String, Emulator)
+    Dim myEmulatorList As New EmulatorDictionary
+    Private Class EmulatorDictionary
+        Inherits Collections.ObjectModel.Collection(Of Emulator)
+        Default Public Overloads ReadOnly Property Item(strTag As String) As IEnumerable(Of Emulator)
+            Get
+                Return (From a As Emulator In Me, b In a.RomTags Where b = strTag Select a).ToList
+            End Get
+        End Property
+        Public Function ContainsKey(strTag As String) As Boolean
+            Return (From a In Me, b In a.RomTags Where b = strTag Take 1).Count
+        End Function
+
+
+
+    End Class
     Public myKeybindings As New Dictionary(Of String, MenulatorAction)
     Dim myFavorites As New Favorites("Favorites.xml")
     Dim MyBad As New MarkedAsBad("Favorites.xml")
@@ -303,13 +317,11 @@ Public Class Form1
 
 
 
-
-
         LoadSettings()
 
 
         Dim strMamePath As String = Nothing
-        If myEmulatorList.ContainsKey("MAME") Then strMamePath = myEmulatorList("MAME").Path
+        If myEmulatorList.ContainsKey("MAME") Then strMamePath = myEmulatorList("MAME")(0).Path
 
         If IO.File.Exists(strMamePath) Then
 
@@ -435,13 +447,15 @@ Public Class Form1
 
 
 
-                myEmulatorList.Add(y.Attributes("name").Value, New Emulator() With {
+                myEmulatorList.Add(New Emulator() With {
                                        .Name = y.Attributes("name").Value,
                                        .Path = y.Attributes("emuPath").Value,
                                        .Actions = actions,
                                        .RomTags = romtags,
                                        .Args = InferStringValue(y.Attributes("args"))
                     })
+
+
             Next
         Next
 
@@ -810,12 +824,7 @@ Public Class Form1
 
 
     End Sub
-    Private Function EmulatorByTag(strTag As String) As Emulator
-        For Each i In myEmulatorList.Values
-            If i.RomTags.Contains(strTag) Then Return i
-        Next
-        Return Nothing
-    End Function
+
 
     Private Function InferBooleanValue(o As Object, Optional reverse As Boolean = False) As Boolean
         If o Is Nothing Then
@@ -890,6 +899,53 @@ Public Class Form1
         myList.Tag = "MAME"
         myList.SetDefaultGameIcon(ScaleImage(My.Resources.MAME, myList.IconSize.ToSize))
         myList.Index = 0
+
+
+        myList.AppsMenu = New List(Of NewUIListItem)
+        Dim emulators = myEmulatorList("MAME")
+        If emulators.Count > 1 Then
+            For Each emu In emulators
+                myList.AppsMenu.Add(New NewUIListItem(emu.Name, myList.bitBucket("."), Sub()
+                                                                                           LaunchRom(emu)
+                                                                                       End Sub)
+                                                      )
+            Next
+        End If
+        myList.AppsMenu.AddRange({New NewUIListItem("Favorite", My.Resources.favorite, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                           If myFavorites.IsFavorite(myList.Tag, myList.SelectedItem.Name) Then
+                                                                                               myList.SelectedItem.Favorite = False
+                                                                                               myList.RefreshIndex(myList.Index)
+                                                                                               myFavorites.Remove(myList.Tag, myList.SelectedItem.Name)
+                                                                                           Else
+                                                                                               myList.SelectedItem.Favorite = True
+                                                                                               myList.RefreshIndex(myList.Index)
+                                                                                               myFavorites.Add(myList.Tag, myList.SelectedItem.Name)
+                                                                                           End If
+                                                                                           result2.CloseMenu = True
+                                                                                       End Sub),
+                                                                               New NewUIListItem("Mark as Bad", My.Resources.notifications_powermenu_icon_close, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                                                                                     If MyBad.IsBad(myList.Tag, myList.SelectedItem.Name) Then
+                                                                                                                                                                         MyBad.Remove(myList.Tag, myList.SelectedItem.Name)
+                                                                                                                                                                     Else
+                                                                                                                                                                         MyBad.Add(myList.Tag, myList.SelectedItem.Name)
+                                                                                                                                                                     End If
+                                                                                                                                                                     result2.CloseMenu = True
+                                                                                                                                                                 End Sub),
+                                                                            New NewUIListItem("More Info", My.Resources.icon_wm10_help, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                                                            If TypeOf myList.SelectedItem Is MAME.MameGame Then
+                                                                                                                                                With DirectCast(myList.SelectedItem, MAME.MameGame)
+                                                                                                                                                    frmMsg.Msgbox(.XML.ToString, MsgBoxStyle.OkOnly, "MAME Info")
+
+                                                                                                                                                End With
+                                                                                                                                            Else
+                                                                                                                                                With DirectCast(myList.SelectedItem, IRom)
+                                                                                                                                                    frmMsg.Msgbox(.Path, MsgBoxStyle.OkOnly, myList.Tag & " Game Info")
+                                                                                                                                                End With
+                                                                                                                                            End If
+                                                                                                                                            result2.CloseMenu = True
+                                                                                                                                        End Sub)
+                            })
+
     End Sub
 
     Private Sub ListRom(RomClass As Type, strTag As String, strPath As String, defaultIcon As Bitmap, Optional MethodOverride As String = "CreateSearcher", Optional AdditionalSearch As Func(Of IRom, Boolean) = Nothing)
@@ -902,6 +958,54 @@ Public Class Form1
         myList.EnableWait = True
         myList.Tag = strTag
         myList.SetDefaultGameIcon(ScaleImage(defaultIcon, myList.IconSize.ToSize))
+
+        myList.AppsMenu = New List(Of NewUIListItem)
+        Dim emulators = myEmulatorList(strTag)
+        If emulators.Count > 1 Then
+            For Each emu In emulators
+                myList.AppsMenu.Add(New NewUIListItem(emu.Name, myList.bitBucket("."), Sub()
+                                                                                           LaunchRom(emu)
+                                                                                       End Sub)
+                                                      )
+            Next
+        End If
+        myList.AppsMenu.AddRange({New NewUIListItem("Favorite", My.Resources.favorite, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                           If myFavorites.IsFavorite(myList.Tag, myList.SelectedItem.Name) Then
+                                                                                               myList.SelectedItem.Favorite = False
+                                                                                               myList.RefreshIndex(myList.Index)
+                                                                                               myFavorites.Remove(myList.Tag, myList.SelectedItem.Name)
+                                                                                           Else
+                                                                                               myList.SelectedItem.Favorite = True
+                                                                                               myList.RefreshIndex(myList.Index)
+                                                                                               myFavorites.Add(myList.Tag, myList.SelectedItem.Name)
+                                                                                           End If
+                                                                                           result2.CloseMenu = True
+                                                                                       End Sub),
+                                                                               New NewUIListItem("Mark as Bad", My.Resources.notifications_powermenu_icon_close, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                                                                                     If MyBad.IsBad(myList.Tag, myList.SelectedItem.Name) Then
+                                                                                                                                                                         MyBad.Remove(myList.Tag, myList.SelectedItem.Name)
+                                                                                                                                                                     Else
+                                                                                                                                                                         MyBad.Add(myList.Tag, myList.SelectedItem.Name)
+                                                                                                                                                                     End If
+                                                                                                                                                                     result2.CloseMenu = True
+                                                                                                                                                                 End Sub),
+                                                                            New NewUIListItem("More Info", My.Resources.icon_wm10_help, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                                                            If TypeOf myList.SelectedItem Is MAME.MameGame Then
+                                                                                                                                                With DirectCast(myList.SelectedItem, MAME.MameGame)
+                                                                                                                                                    frmMsg.Msgbox(.XML.ToString, MsgBoxStyle.OkOnly, "MAME Info")
+
+                                                                                                                                                End With
+                                                                                                                                            Else
+                                                                                                                                                With DirectCast(myList.SelectedItem, IRom)
+                                                                                                                                                    frmMsg.Msgbox(.Path, MsgBoxStyle.OkOnly, myList.Tag & " Game Info")
+                                                                                                                                                End With
+                                                                                                                                            End If
+                                                                                                                                            result2.CloseMenu = True
+                                                                                                                                        End Sub)
+                            })
+
+
+
         Dim thread As Threading.Thread
 
         thread = New Threading.Thread(New Threading.ThreadStart(Sub()
@@ -917,14 +1021,15 @@ Public Class Form1
 
                                                                     'Next
                                                                     Dim fav = myFavorites(strTag) ' GetFavorites(strTag)
-                                                                    iRom = iRom.OrderBy(Function(a)
+                                                                    If fav IsNot Nothing Then
+                                                                        iRom = iRom.OrderBy(Function(a)
                                                                                             If fav.Contains(a.Name) Then
                                                                                                 a.Favorite = True
                                                                                             End If
 
                                                                                             Return a.Description
                                                                                         End Function)
-
+                                                                    End If
                                                                     'iRom = iRom.OrderBy(Of String)(Function(a) a.Description).ToList
                                                                     myList.GameList = iRom.ToList
                                                                     ' myList.GameList = SnesROM.CreateSearcher("D:\shares\games\snes\roms")
@@ -1476,40 +1581,7 @@ Public Class Form1
                                                                                            .Controls.AddRange(myGamesMenu.Values.ToArray)
                                                                                            SubMenuIndex(SubMenuDepth) = 0
 
-                                                                                           myList.AppsMenu = New List(Of NewUIListItem)({New NewUIListItem("Favorite", My.Resources.favorite, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                                                                                                                  If myFavorites.IsFavorite(myList.Tag, myList.SelectedItem.Name) Then
-                                                                                                                                                                                                      myList.SelectedItem.Favorite = False
-                                                                                                                                                                                                      myList.RefreshIndex(myList.Index)
-                                                                                                                                                                                                      myFavorites.Remove(myList.Tag, myList.SelectedItem.Name)
-                                                                                                                                                                                                  Else
-                                                                                                                                                                                                      myList.SelectedItem.Favorite = True
-                                                                                                                                                                                                      myList.RefreshIndex(myList.Index)
-                                                                                                                                                                                                      myFavorites.Add(myList.Tag, myList.SelectedItem.Name)
-                                                                                                                                                                                                  End If
-                                                                                                                                                                                                  result2.CloseMenu = False
-                                                                                                                                                                                              End Sub),
-                                                                                                                                                     New NewUIListItem("Mark as Bad", My.Resources.notifications_powermenu_icon_close, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                                                                                                                                                           If MyBad.IsBad(myList.Tag, myList.SelectedItem.Name) Then
-                                                                                                                                                                                                                                               MyBad.Remove(myList.Tag, myList.SelectedItem.Name)
-                                                                                                                                                                                                                                           Else
-                                                                                                                                                                                                                                               MyBad.Add(myList.Tag, myList.SelectedItem.Name)
-                                                                                                                                                                                                                                           End If
-                                                                                                                                                                                                                                           result2.CloseMenu = False
-                                                                                                                                                                                                                                       End Sub),
-                                                                                                                                                     New NewUIListItem("More Info", My.Resources.icon_wm10_help, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                                                                                                                                     If TypeOf myList.SelectedItem Is MAME.MameGame Then
-                                                                                                                                                                                                                         With DirectCast(myList.SelectedItem, MAME.MameGame)
-                                                                                                                                                                                                                             frmMsg.Msgbox(.XML.ToString, MsgBoxStyle.OkOnly, "MAME Info")
 
-                                                                                                                                                                                                                         End With
-                                                                                                                                                                                                                     Else
-                                                                                                                                                                                                                         With DirectCast(myList.SelectedItem, IRom)
-                                                                                                                                                                                                                             frmMsg.Msgbox(.Path, MsgBoxStyle.OkOnly, myList.Tag & " Game Info")
-                                                                                                                                                                                                                         End With
-                                                                                                                                                                                                                     End If
-                                                                                                                                                                                                                     result2.CloseMenu = True
-                                                                                                                                                                                                                 End Sub)
-                                                                                                       })
                                                                                            .Visible = True
                                                                                            result.CloseMenu = False
                                                                                        End With
@@ -1918,10 +1990,55 @@ Public Class Form1
     Public Shared Function SetForegroundWindow(hWnd As IntPtr) As Boolean
 
     End Function
+
+    Private Sub LaunchRom()
+        LaunchRom(myList.Tag.ToString)
+    End Sub
+    Private Sub LaunchRom(strTag As String)
+        LaunchRom(myEmulatorList(strTag)(0))
+    End Sub
+    Private Sub LaunchRom(e As Emulator)
+        Me.Cursor = Cursors.WaitCursor
+        Dim oldState = Me.WindowState
+        CloseAllSubMenu()
+
+        InGame = True
+        Me.WindowState = FormWindowState.Minimized
+        Dim c As frmMenulator.MenuItemCollection
+        With e
+            If .Actions IsNot Nothing AndAlso .Actions.Count > 0 Then
+                c = New frmMenulator.MenuItemCollection(Keys.Pause)
+                For Each i In .Actions
+                    c.Add(New frmMenulator.MenuItem(i.Name, i.ImgTag, i.KeyboardKey, i.hideWindow, i.closeWindow))
+                Next
+            Else
+                c = frmMenulator.ConsoleDefaultItemCollection
+            End If
+
+            If myList.Tag = "MAME" Then
+                MenulatorGameMenu = New frmMenulator(.Path, myList.SelectedItem.Name, frmMenulator.MameDefaultItemCollection, False, False)
+            Else
+
+                If Not String.IsNullOrEmpty(.Args) Then
+                    MenulatorGameMenu = New frmMenulator(.Path, Chr(34) & myList.SelectedItem.Path & Chr(34), .Args, c)
+                Else
+                    MenulatorGameMenu = New frmMenulator(.Path, Chr(34) & myList.SelectedItem.Path & Chr(34), c)
+                End If
+            End If
+
+        End With
+        AddHandler MenulatorGameMenu.FormClosed, Sub()
+                                                     Me.WindowState = oldState
+                                                     Me.Cursor = Cursors.Default
+                                                     InGame = False
+                                                 End Sub
+
+        MenulatorGameMenu.Show()
+    End Sub
+
+
     Private Sub me_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown ', myList.KeyDown
-        Debug.Print(e.KeyCode.ToString)
-
-
+        'Debug.Print(e.KeyCode.ToString)
 
         If InGame Then
             If (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
@@ -1969,44 +2086,8 @@ Public Class Form1
                                 Exit Select
                             End If
 
+                            LaunchRom()
 
-                            Me.Cursor = Cursors.WaitCursor
-                            Dim oldState = Me.WindowState
-                            CloseAllSubMenu()
-
-
-                            With EmulatorByTag(myList.Tag)
-                                InGame = True
-                                Me.WindowState = FormWindowState.Minimized
-                                Dim c As frmMenulator.MenuItemCollection
-                                If .Actions IsNot Nothing AndAlso .Actions.Count > 0 Then
-                                    c = New frmMenulator.MenuItemCollection(Keys.Pause)
-                                    For Each i In .Actions
-                                        c.Add(New frmMenulator.MenuItem(i.Name, i.ImgTag, i.KeyboardKey, i.hideWindow, i.closeWindow))
-                                    Next
-                                Else
-                                    c = frmMenulator.ConsoleDefaultItemCollection
-                                End If
-
-                                If myList.Tag = "MAME" Then
-                                    MenulatorGameMenu = New frmMenulator(.Path, myList.SelectedItem.Name, frmMenulator.MameDefaultItemCollection, False, False)
-                                Else
-
-                                    If Not String.IsNullOrEmpty(.Args) Then
-                                        MenulatorGameMenu = New frmMenulator(.Path, Chr(34) & myList.SelectedItem.Path & Chr(34), .Args, c)
-                                    Else
-                                        MenulatorGameMenu = New frmMenulator(.Path, Chr(34) & myList.SelectedItem.Path & Chr(34), c)
-                                    End If
-                                End If
-
-                                AddHandler MenulatorGameMenu.FormClosed, Sub()
-                                                                             Me.WindowState = oldState
-                                                                             Me.Cursor = Cursors.Default
-                                                                             InGame = False
-                                                                         End Sub
-
-                                MenulatorGameMenu.Show()
-                            End With
                             e.Handled = True
 
                         Case "pnlFiles"
@@ -2031,35 +2112,7 @@ Public Class Form1
                     End Select
                 End If
 
-            'Case myKeybindings("AltAction").KeyboardKey
-            '    If pnlLeft.Visible AndAlso (SubMenuDepth > 0 And subMenus(0).Controls(SubMenuIndex(0)).Tag = "MAME") Then
-            '        With NewSubMenu()
-            '            .Controls.AddRange(New NewUIListItem() {
-            '                                                    New NewUIListItem("Display Favorites", My.Resources.favorite, Sub()
-            '                                                                                                                      Dim favs() As String = Nothing
-            '                                                                                                                      If SubMenuIndex(SubMenuDepth - 1) >= 0 AndAlso subMenus(SubMenuDepth - 1).Controls.Count Then favs = myFavorites(DirectCast(subMenus(0).Controls(SubMenuIndex(0)), NewUIListItem).Tag)
-            '                                                                                                                      If DirectCast(subMenus(0).Controls(SubMenuIndex(0)), NewUIListItem).Tag = "MAME" Then
-            '                                                                                                                          ListMAME(ListMAMEDefaultClause(Function(element As XElement) As Boolean
-            '                                                                                                                                                             Return (From a2 In favs Where a2 = element.@<name> Take 1).Count
-            '                                                                                                                                                         End Function))
-            '                                                                                                                      Else
-            '                                                                                                                          myGamesMenu(subMenus(SubMenuDepth - 1).Controls(SubMenuIndex(SubMenuDepth - 1)).Tag).PerformAltClick()
-            '                                                                                                                      End If
-            '                                                                                                                      'subMenus(SubMenuDepth - 1).Visible = False
 
-            '                                                                                                                      CloseAllSubMenu()
-
-            '                                                                                                                      pnlLeft.Visible = False
-            '                                                                                                                      imgMenulator.Visible = True
-            '                                                                                                                      imgMenulatorIcon.Visible = False
-            '                                                                                                                      e.Handled = True
-            '                                                                                                                  End Sub)
-            '                           })
-            '            .Visible = True
-            '            SubMenuIndex(SubMenuDepth - 1) = 0
-            '        End With
-            '        e.Handled = True
-            '    End If
             Case myKeybindings("Cancel").KeyboardKey
                 If MainMenu_Current = "pnlFiles" Then
                     Try
@@ -2069,28 +2122,7 @@ Public Class Form1
                     e.Handled = True
                 End If
             Case myKeybindings("Escape").KeyboardKey  ' Keys.Escape
-                'If pnlRight.Visible Then
-                '    If cboPlayersOp.DroppedDown Then
-                '        cboPlayersOp.DroppedDown = False
-                '    ElseIf cboStatus.DroppedDown Then
-                '        cboStatus.DroppedDown = False
-                '    ElseIf cboYearOp.DroppedDown Then
-                '        cboYearOp.DroppedDown = False
-                '    Else
-                '        pnlRight.Visible = False
-                '    End If
-                '    e.Handled = True
-                '    'ElseIf pnlLeft.Visible Then
-                '    '    If SubMenuDepth > 0 Then
-                '    '        'debugobject.Visible = False
 
-                '    '        CloseSubMenu()
-
-                '    '    Else
-                '    '        pnlLeft.Visible = False
-                '    '    End If
-                '    '    e.Handled = True
-                'Else
                 If myList.InAppsMenu Then
 
                 Else
@@ -2135,32 +2167,11 @@ Public Class Form1
                 SetForegroundWindow(Me.Handle)
             Case myKeybindings("Menu").KeyboardKey
                 pnlLeft.Visible = Not pnlLeft.Visible
-                'Static pnlLeftVisible As Boolean = False
-                'If pnlLeftVisible = False Then
-                'AnimateWindow(pnlLeft.Handle, 150, AnimateWindowFlags.AW_ACTIVATE Or AnimateWindowFlags.AW_SLIDE Or AnimateWindowFlags.AW_HOR_POSITIVE)
-                'pnlLeft.Visible = True
-                ''Else
-                ' AnimateWindow(pnlLeft.Handle, 150, AnimateWindowFlags.AW_HIDE Or AnimateWindowFlags.AW_SLIDE Or AnimateWindowFlags.AW_HOR_NEGATIVE)
-                ' End If
-                'pnlLeftVisible = Not pnlLeftVisible
 
-
-                'If pnlLeft.Visible Then
-                '    pnlLeft_Index = 0
-                '    myList.VisualOffset = New Point(pnlLeft.Width / 2, 0)
-                'Else
-                '    myList.VisualOffset = Point.Empty
-                'End If
                 e.Handled = True
 
             Case myKeybindings("Search").KeyboardKey
-                ''MsgBox("TEST", MsgBoxStyle.AbortRetryIgnore)
-                'Process.Start("c:\Program Files\Common Files\microsoft shared\ink\tabtip.exe")
-                'Dim UIHostNoLaunch = New UIHostNoLaunch()
-                'Dim tipInvocation = CType(UIHostNoLaunch, ITipInvocation)
-                'tipInvocation.Toggle(Me.Handle)
-                'Marshal.ReleaseComObject(UIHostNoLaunch)
-                'e.Handled = True
+
                 pnlRight.Visible = True
                 txtDescription.Focus()
             'Case Keys.F3

@@ -466,6 +466,7 @@ Public Class GBRom
         _path = path
         Dim rawData(Marshal.SizeOf(header)) As Byte
         Dim f = IO.File.OpenRead(path)
+        f.Seek(&H134, SeekOrigin.Begin)
         f.Read(rawData, 0, UBound(rawData))
         f.Close()
 
@@ -856,7 +857,7 @@ Public Class DSRom
     End Sub
     Public Property Name As String Implements IRom.Name
         Get
-            Return Icon.EnglishTitle
+            Return Icon.EnglishTitle.Replace(vbNullChar, "").Trim
         End Get
         Private Set(value As String)
             Throw New NotImplementedException()
@@ -931,8 +932,9 @@ Public Class WiiRom
         _Path = strPath
         Dim f = IO.File.OpenRead(strPath)
         Dim rawData(255) As Byte
-        f.Read(rawData, &H10, UBound(rawData))
-        _Name = System.Text.Encoding.UTF8.GetString(rawData)
+        f.Seek(&H20, SeekOrigin.Begin)
+        f.Read(rawData, &H0, UBound(rawData))
+        _Name = System.Text.Encoding.UTF8.GetString(rawData).Replace(vbNullChar, "").Trim
 
 
     End Sub
@@ -1164,17 +1166,17 @@ Public Class PSxRom
         _path = path
         Dim rawData(Marshal.SizeOf(header)) As Byte
         Dim f = IO.File.OpenRead(path)
-        Select Case IO.Path.GetExtension(path).ToLower
-            Case ".bin"
-                '&h1318
-                'f.Seek(&H9318, IO.SeekOrigin.Begin)
-                f.Seek(byteOffset + &H1318, IO.SeekOrigin.Begin)
-            Case Else
-                'f.Seek(&H8000, IO.SeekOrigin.Begin)
-                f.Seek(byteOffset, IO.SeekOrigin.Begin)
-        End Select
-        'f.Seek(byteOffset, IO.SeekOrigin.Begin)
-        f.Read(rawData, 0, UBound(rawData))
+        'Select Case IO.Path.GetExtension(path).ToLower
+        '    Case ".bin"
+        '        '&h1318
+        '        'f.Seek(&H9318, IO.SeekOrigin.Begin)
+        '        f.Seek(byteOffset + &H1318, IO.SeekOrigin.Begin)
+        '    Case Else
+        'f.Seek(&H8000, IO.SeekOrigin.Begin)
+        f.Seek(byteOffset, IO.SeekOrigin.Begin)
+                'End Select
+                'f.Seek(byteOffset, IO.SeekOrigin.Begin)
+                f.Read(rawData, 0, UBound(rawData))
         f.Close()
 
         Dim handle As GCHandle = GCHandle.Alloc(rawData, GCHandleType.Pinned)
@@ -1191,8 +1193,8 @@ Public Class PSxRom
     End Sub
     Public Property Name As String Implements IRom.Name
         Get
-            Dim s = System.Text.Encoding.ASCII.GetString(header.VolumeID).Trim  'MyBase.Name
-            If String.IsNullOrEmpty(s) Then Return Nothing
+            Dim s = System.Text.Encoding.ASCII.GetString(header.VolumeID).Replace(vbNullChar, "").Trim  'MyBase.Name
+            If String.IsNullOrEmpty(s) Then Return IO.Path.GetFileNameWithoutExtension(_path)
             Return s
         End Get
         Private Set(value As String)
@@ -1697,7 +1699,7 @@ Public Class DCRom
     End Sub
     Public Property Name As String Implements IRom.Name
         Get
-            Return System.Text.Encoding.ASCII.GetString(header.Name)
+            Return System.Text.Encoding.ASCII.GetString(header.Name).Replace(vbNullChar, "").Trim
         End Get
         Private Set(value As String)
             Throw New NotImplementedException()

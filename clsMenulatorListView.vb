@@ -348,7 +348,7 @@ Public Class MenulatorListView
             If _exit Then Exit For
         Next
 
-        If menuParentRect <> RectangleF.Empty Then
+        If menuParentRect <> RectangleF.Empty AndAlso AppsMenu IsNot Nothing Then
             Dim menu_r = New Rectangle(menuParentRect.Right, menuParentRect.Y, 200, (AppsMenu.Count * 32) + (AppsMenu.Count * 4))
             e.Graphics.FillRectangle(SystemBrushes.ControlLight, menu_r)
             menu_r.Height = 32
@@ -650,6 +650,8 @@ theend:
                     Index += ItemsPerX
                 End If
                 e.Handled = True
+
+
             Case Keys.Return
                 If _AppsMenuParentIndex <> -1 Then
                     Dim result As New NewUIListItem.NewUIListItemClickedEvent
@@ -660,18 +662,20 @@ theend:
                         Refresh()
                     End If
                     e.Handled = True
-                    End If
-                    Case Keys.Apps
-                If _AppsMenuParentIndex = -1 Then
-                    _AppsMenuParentIndex = _Index
-
-                Else
-                    _AppsMenuParentIndex = -1
                 End If
+            Case Keys.Apps
+                If _AppsMenu IsNot Nothing Then
+                    If _AppsMenuParentIndex = -1 Then
+                        _AppsMenuParentIndex = _Index
+
+                    Else
+                        _AppsMenuParentIndex = -1
+                    End If
 
 
-                Refresh()
-                e.Handled = True
+                    Refresh()
+                    e.Handled = True
+                End If
             Case Keys.PageDown
                 If _AppsMenuParentIndex = -1 Then
                     Index += VisibleItemCount()
