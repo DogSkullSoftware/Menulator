@@ -137,7 +137,7 @@ Public Class Form1
         Inherits Collections.ObjectModel.Collection(Of Emulator)
         Default Public Overloads ReadOnly Property Item(strTag As String) As IEnumerable(Of Emulator)
             Get
-                Return (From a As Emulator In Me, b In a.RomTags Where b = strTag Select a).ToList
+                Return (From a As Emulator In Me, b In a.RomTags Where b = strTag Select a)
             End Get
         End Property
         Public Function ContainsKey(strTag As String) As Boolean
@@ -232,7 +232,6 @@ Public Class Form1
 
         'Dim raw As New RAWINPUTDEVICE() With {.hwndTarget = Me.Handle, .usUsage = 4, .usUsagePage = 1, .dwFlags = 0}
         'RegisterRawInputDevices(raw, 1, Marshal.SizeOf(GetType(RAWINPUTDEVICE)))
-
 
     End Sub
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
@@ -356,6 +355,7 @@ Public Class Form1
         ReDim _subMenuIndex(0)
         pnlLeft.Controls.Add(subMenus(0))
         pnlLeft.Visible = True
+
     End Sub
     Private Sub LoadSettings(Optional strPath As String = "Menulator.xml")
         Dim file As New Xml.XmlDocument()
@@ -2077,6 +2077,18 @@ Public Class Form1
 
         Select Case e.KeyCode
                 'mylist handling
+            Case Keys.T
+                myList.Toasty(Nothing)
+            Case myKeybindings("Start1").KeyboardKey
+
+                If Controllers(0).lastInfo.IsAxisMin(1, Controllers(0).DeviceCaps) Then
+                    myList.Toasty(Nothing)
+                End If
+            Case myKeybindings("Start2").KeyboardKey
+                If Controllers(1).lastInfo.IsAxisMin(1, Controllers(1).DeviceCaps) Then
+                    myList.Toasty(Nothing)
+                End If
+
             Case myKeybindings("Action").KeyboardKey ' Keys.Return
 
                 If myList.GameList IsNot Nothing Then
@@ -3015,17 +3027,17 @@ Public Class Form1
     Private Sub Form1_JoyStickAxisDown(sender As Object, e As JoyApi.Joystick.JoyStickAxisEventArgs) Handles Me.JoyStickAxisDown
         If InGame = False OrElse (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
             If needJoyId Then NeedJoyIDCallback.Invoke(sender, e) : needJoyId = False : Exit Sub
-            If sender.joyindex = 2 Then
-                Select Case e.AxisID
-                    Case 1
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.ESCAPE)
-                        End If
-                End Select
-            Else
-                Select Case e.AxisID
+            'If sender.joyindex = 2 Then
+            '    Select Case e.AxisID
+            '        Case 1
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.ESCAPE)
+            '            End If
+            '    End Select
+            'Else
+            Select Case e.AxisID
                     Case 0
                         If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
                             WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.LEFT)
@@ -3040,7 +3052,7 @@ Public Class Form1
                         End If
 
                 End Select
-            End If
+            'End If
         End If
     End Sub
 
@@ -3048,17 +3060,17 @@ Public Class Form1
         If InGame = False OrElse (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
             If needJoyId Then NeedJoyIDCallback.Invoke(sender, e) : needJoyId = False : Exit Sub
 
-            If sender.joyindex = 2 Then
-                Select Case e.AxisID
-                    Case 1
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            '  WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.SPACE)
-                        Else
-                            ' WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.ESCAPE)
-                        End If
-                End Select
-            Else
-                Select Case e.AxisID
+            'If sender.joyindex = 2 Then
+            '    Select Case e.AxisID
+            '        Case 1
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                '  WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.SPACE)
+            '            Else
+            '                ' WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.ESCAPE)
+            '            End If
+            '    End Select
+            'Else
+            Select Case e.AxisID
                     Case 0
                         If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
                             WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.LEFT)
@@ -3073,7 +3085,7 @@ Public Class Form1
                         End If
 
                 End Select
-            End If
+            'End If
         End If
     End Sub
 
@@ -3081,18 +3093,18 @@ Public Class Form1
         If InGame = False OrElse (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
             If needJoyId Then NeedJoyIDCallback.Invoke(sender, e) : needJoyId = False : Exit Sub
 
-            If sender.joyindex = 2 Then
-                Select Case e.AxisID
-                    Case 1
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            ' WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.SPACE)
-                        Else
-                            ' WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.ESCAPE)
-                        End If
-                End Select
-            Else
+            'If sender.joyindex = 2 Then
+            '    Select Case e.AxisID
+            '        Case 1
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                ' WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.SPACE)
+            '            Else
+            '                ' WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.ESCAPE)
+            '            End If
+            '    End Select
+            'Else
 
-                Select Case e.AxisID
+            Select Case e.AxisID
                     Case 0
                         If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
                             WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.LEFT)
@@ -3106,7 +3118,7 @@ Public Class Form1
                             WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.DOWN)
                         End If
                 End Select
-            End If
+            'End If
         End If
     End Sub
 
@@ -3198,9 +3210,12 @@ Public Class Form1
         End If
     End Sub
 #End Region
+
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
         lblTime.Text = Now.ToString("h:mm tt  M/dd/yyyy")
     End Sub
+
+
 
 
 
@@ -3298,7 +3313,16 @@ Public Class PanelEx
     End Function
     Public Property AnimateTime As Integer = 150
 
-
+    'Protected Overrides ReadOnly Property CreateParams() As CreateParams
+    '    Get
+    '        Dim cp As CreateParams = MyBase.CreateParams
+    '        cp.ExStyle = cp.ExStyle Or &H20 ' // WS_EX_TRANSPARENT
+    '        Return cp
+    '    End Get
+    'End Property
+    'Protected Overrides Sub OnPaintBackground(e As PaintEventArgs)
+    '    'MyBase.OnPaintBackground(e)
+    'End Sub
 End Class
 
 Public Class FlowLayoutPanelEx

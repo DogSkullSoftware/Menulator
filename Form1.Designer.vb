@@ -44,44 +44,10 @@ Partial Class Form1
         Me.Label1 = New System.Windows.Forms.Label()
         Me.pnlLeft = New Menulator_Zero.PanelEx()
         Me.imgMenulatorIcon = New Menulator_Zero.PanelEx()
-        'Me.FlowLayoutPanel1 = New Menulator_Zero.FlowLayoutPanelEx()
-        'Me.pnlGames = New System.Windows.Forms.Panel()
-        'Me.Panel4 = New System.Windows.Forms.Panel()
-        'Me.Label14 = New System.Windows.Forms.Label()
-        'Me.pnlMusic = New System.Windows.Forms.Panel()
-        'Me.Panel5 = New System.Windows.Forms.Panel()
-        'Me.Label15 = New System.Windows.Forms.Label()
-        'Me.pnlNetwork = New System.Windows.Forms.Panel()
-        'Me.Panel7 = New System.Windows.Forms.Panel()
-        'Me.Label16 = New System.Windows.Forms.Label()
-        'Me.pnlApplication = New System.Windows.Forms.Panel()
-        'Me.Panel9 = New System.Windows.Forms.Panel()
-        'Me.Label7 = New System.Windows.Forms.Label()
-        'Me.pnlFiles = New System.Windows.Forms.Panel()
-        'Me.Panel11 = New System.Windows.Forms.Panel()
-        'Me.Label8 = New System.Windows.Forms.Label()
-        'Me.pnlSettings = New System.Windows.Forms.Panel()
-        'Me.Panel13 = New System.Windows.Forms.Panel()
-        'Me.Label9 = New System.Windows.Forms.Label()
-        'Me.pnlHelp = New System.Windows.Forms.Panel()
-        'Me.Panel15 = New System.Windows.Forms.Panel()
-        'Me.Label10 = New System.Windows.Forms.Label()
-        'Me.pnlPower = New System.Windows.Forms.Panel()
-        'Me.Panel17 = New System.Windows.Forms.Panel()
-        'Me.Label11 = New System.Windows.Forms.Label()
         Me.imgMenulator = New Menulator_Zero.PanelEx()
         Me.lblTime = New System.Windows.Forms.Label()
         Me.pnlRight.SuspendLayout()
         Me.pnlLeft.SuspendLayout()
-        'Me.FlowLayoutPanel1.SuspendLayout()
-        'Me.pnlGames.SuspendLayout()
-        'Me.pnlMusic.SuspendLayout()
-        'Me.pnlNetwork.SuspendLayout()
-        'Me.pnlApplication.SuspendLayout()
-        'Me.pnlFiles.SuspendLayout()
-        'Me.pnlSettings.SuspendLayout()
-        'Me.pnlHelp.SuspendLayout()
-        'Me.pnlPower.SuspendLayout()
         Me.SuspendLayout()
         '
         'Timer1
@@ -291,7 +257,6 @@ Partial Class Form1
         Me.pnlLeft.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
         Me.pnlLeft.BackColor = System.Drawing.SystemColors.ControlLight
         Me.pnlLeft.Controls.Add(Me.imgMenulatorIcon)
-        'Me.pnlLeft.Controls.Add(Me.FlowLayoutPanel1)
         Me.pnlLeft.Controls.Add(Me.imgMenulator)
         Me.pnlLeft.Controls.Add(Me.lblTime)
         Me.pnlLeft.Dock = System.Windows.Forms.DockStyle.Left
@@ -312,270 +277,6 @@ Partial Class Form1
         Me.imgMenulatorIcon.Size = New System.Drawing.Size(52, 73)
         Me.imgMenulatorIcon.TabIndex = 10
         Me.imgMenulatorIcon.Visible = False
-        ''
-        ''FlowLayoutPanel1
-        ''
-        'Me.FlowLayoutPanel1.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
-        '    Or System.Windows.Forms.AnchorStyles.Left) _
-        '    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        'Me.FlowLayoutPanel1.AnimateTime = 150
-        'Me.FlowLayoutPanel1.AutoScroll = True
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlGames)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlMusic)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlNetwork)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlApplication)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlFiles)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlSettings)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlHelp)
-        'Me.FlowLayoutPanel1.Controls.Add(Me.pnlPower)
-        'Me.FlowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.TopDown
-        'Me.FlowLayoutPanel1.Font = New System.Drawing.Font("Segoe UI", 11.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        'Me.FlowLayoutPanel1.Location = New System.Drawing.Point(0, 100)
-        'Me.FlowLayoutPanel1.Name = "FlowLayoutPanel1"
-        'Me.FlowLayoutPanel1.Size = New System.Drawing.Size(295, 633)
-        'Me.FlowLayoutPanel1.TabIndex = 1
-        'Me.FlowLayoutPanel1.Visible = False
-        'Me.FlowLayoutPanel1.WrapContents = False
-        ''
-        ''pnlGames
-        ''
-        'Me.pnlGames.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlGames.Controls.Add(Me.Panel4)
-        'Me.pnlGames.Controls.Add(Me.Label14)
-        'Me.pnlGames.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlGames.Location = New System.Drawing.Point(3, 3)
-        'Me.pnlGames.Name = "pnlGames"
-        'Me.pnlGames.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlGames.TabIndex = 8
-        ''
-        ''Panel4
-        ''
-        'Me.Panel4.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_games
-        'Me.Panel4.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel4.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel4.Name = "Panel4"
-        'Me.Panel4.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel4.TabIndex = 2
-        ''
-        ''Label14
-        ''
-        'Me.Label14.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label14.Location = New System.Drawing.Point(64, 0)
-        'Me.Label14.Name = "Label14"
-        'Me.Label14.Size = New System.Drawing.Size(222, 48)
-        'Me.Label14.TabIndex = 8
-        'Me.Label14.Text = "Games"
-        'Me.Label14.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlMusic
-        ''
-        'Me.pnlMusic.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlMusic.Controls.Add(Me.Panel5)
-        'Me.pnlMusic.Controls.Add(Me.Label15)
-        'Me.pnlMusic.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlMusic.Location = New System.Drawing.Point(3, 57)
-        'Me.pnlMusic.Name = "pnlMusic"
-        'Me.pnlMusic.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlMusic.TabIndex = 9
-        ''
-        ''Panel5
-        ''
-        'Me.Panel5.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_audio
-        'Me.Panel5.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel5.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel5.Name = "Panel5"
-        'Me.Panel5.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel5.TabIndex = 2
-        ''
-        ''Label15
-        ''
-        'Me.Label15.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label15.Location = New System.Drawing.Point(64, 0)
-        'Me.Label15.Name = "Label15"
-        'Me.Label15.Size = New System.Drawing.Size(222, 48)
-        'Me.Label15.TabIndex = 8
-        'Me.Label15.Text = "Media"
-        'Me.Label15.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlNetwork
-        ''
-        'Me.pnlNetwork.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlNetwork.Controls.Add(Me.Panel7)
-        'Me.pnlNetwork.Controls.Add(Me.Label16)
-        'Me.pnlNetwork.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlNetwork.Location = New System.Drawing.Point(3, 111)
-        'Me.pnlNetwork.Name = "pnlNetwork"
-        'Me.pnlNetwork.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlNetwork.TabIndex = 10
-        ''
-        ''Panel7
-        ''
-        'Me.Panel7.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_globe
-        'Me.Panel7.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel7.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel7.Name = "Panel7"
-        'Me.Panel7.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel7.TabIndex = 2
-        ''
-        ''Label16
-        ''
-        'Me.Label16.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label16.Location = New System.Drawing.Point(64, 0)
-        'Me.Label16.Name = "Label16"
-        'Me.Label16.Size = New System.Drawing.Size(222, 48)
-        'Me.Label16.TabIndex = 8
-        'Me.Label16.Text = "Internet"
-        'Me.Label16.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlApplication
-        ''
-        'Me.pnlApplication.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlApplication.Controls.Add(Me.Panel9)
-        'Me.pnlApplication.Controls.Add(Me.Label7)
-        'Me.pnlApplication.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlApplication.Location = New System.Drawing.Point(3, 165)
-        'Me.pnlApplication.Name = "pnlApplication"
-        'Me.pnlApplication.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlApplication.TabIndex = 11
-        ''
-        ''Panel9
-        ''
-        'Me.Panel9.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_gotostart
-        'Me.Panel9.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel9.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel9.Name = "Panel9"
-        'Me.Panel9.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel9.TabIndex = 2
-        ''
-        ''Label7
-        ''
-        'Me.Label7.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label7.Location = New System.Drawing.Point(64, 0)
-        'Me.Label7.Name = "Label7"
-        'Me.Label7.Size = New System.Drawing.Size(222, 48)
-        'Me.Label7.TabIndex = 8
-        'Me.Label7.Text = "Application"
-        'Me.Label7.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlFiles
-        ''
-        'Me.pnlFiles.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlFiles.Controls.Add(Me.Panel11)
-        'Me.pnlFiles.Controls.Add(Me.Label8)
-        'Me.pnlFiles.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlFiles.Location = New System.Drawing.Point(3, 219)
-        'Me.pnlFiles.Name = "pnlFiles"
-        'Me.pnlFiles.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlFiles.TabIndex = 12
-        ''
-        ''Panel11
-        ''
-        'Me.Panel11.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_folder
-        'Me.Panel11.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel11.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel11.Name = "Panel11"
-        'Me.Panel11.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel11.TabIndex = 2
-        ''
-        ''Label8
-        ''
-        'Me.Label8.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label8.Location = New System.Drawing.Point(64, 0)
-        'Me.Label8.Name = "Label8"
-        'Me.Label8.Size = New System.Drawing.Size(222, 48)
-        'Me.Label8.TabIndex = 8
-        'Me.Label8.Text = "File Explorer"
-        'Me.Label8.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlSettings
-        ''
-        'Me.pnlSettings.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlSettings.Controls.Add(Me.Panel13)
-        'Me.pnlSettings.Controls.Add(Me.Label9)
-        'Me.pnlSettings.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlSettings.Location = New System.Drawing.Point(3, 273)
-        'Me.pnlSettings.Name = "pnlSettings"
-        'Me.pnlSettings.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlSettings.TabIndex = 13
-        ''
-        ''Panel13
-        ''
-        'Me.Panel13.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_settings2
-        'Me.Panel13.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel13.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel13.Name = "Panel13"
-        'Me.Panel13.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel13.TabIndex = 2
-        ''
-        ''Label9
-        ''
-        'Me.Label9.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label9.Location = New System.Drawing.Point(64, 0)
-        'Me.Label9.Name = "Label9"
-        'Me.Label9.Size = New System.Drawing.Size(222, 48)
-        'Me.Label9.TabIndex = 8
-        'Me.Label9.Text = "Control Panel"
-        'Me.Label9.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlHelp
-        ''
-        'Me.pnlHelp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlHelp.Controls.Add(Me.Panel15)
-        'Me.pnlHelp.Controls.Add(Me.Label10)
-        'Me.pnlHelp.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlHelp.Location = New System.Drawing.Point(3, 327)
-        'Me.pnlHelp.Name = "pnlHelp"
-        'Me.pnlHelp.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlHelp.TabIndex = 14
-        ''
-        ''Panel15
-        ''
-        'Me.Panel15.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_help
-        'Me.Panel15.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel15.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel15.Name = "Panel15"
-        'Me.Panel15.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel15.TabIndex = 2
-        ''
-        ''Label10
-        ''
-        'Me.Label10.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label10.Location = New System.Drawing.Point(64, 0)
-        'Me.Label10.Name = "Label10"
-        'Me.Label10.Size = New System.Drawing.Size(222, 48)
-        'Me.Label10.TabIndex = 8
-        'Me.Label10.Text = "Help"
-        'Me.Label10.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        ''
-        ''pnlPower
-        ''
-        'Me.pnlPower.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        'Me.pnlPower.Controls.Add(Me.Panel17)
-        'Me.pnlPower.Controls.Add(Me.Label11)
-        'Me.pnlPower.Dock = System.Windows.Forms.DockStyle.Left
-        'Me.pnlPower.Location = New System.Drawing.Point(3, 381)
-        'Me.pnlPower.Name = "pnlPower"
-        'Me.pnlPower.Size = New System.Drawing.Size(286, 48)
-        'Me.pnlPower.TabIndex = 15
-        ''
-        ''Panel17
-        ''
-        'Me.Panel17.BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.notifications_powermenu_icon_standby
-        'Me.Panel17.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        'Me.Panel17.Location = New System.Drawing.Point(6, 3)
-        'Me.Panel17.Name = "Panel17"
-        'Me.Panel17.Size = New System.Drawing.Size(52, 42)
-        'Me.Panel17.TabIndex = 2
-        ''
-        ''Label11
-        ''
-        'Me.Label11.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'Me.Label11.Location = New System.Drawing.Point(64, 0)
-        'Me.Label11.Name = "Label11"
-        'Me.Label11.Size = New System.Drawing.Size(222, 48)
-        'Me.Label11.TabIndex = 8
-        'Me.Label11.Text = "Power"
-        'Me.Label11.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
         '
         'imgMenulator
         '
@@ -602,6 +303,9 @@ Partial Class Form1
         Me.lblTime.Size = New System.Drawing.Size(286, 32)
         Me.lblTime.TabIndex = 3
         Me.lblTime.Text = "Label12"
+
+
+
         '
         'Form1
         '
@@ -617,19 +321,11 @@ Partial Class Form1
         Me.Margin = New System.Windows.Forms.Padding(4, 5, 4, 5)
         Me.Name = "Form1"
         Me.Text = "Menulator"
+        Me.TransparencyKey = System.Drawing.Color.Green
         Me.WindowState = System.Windows.Forms.FormWindowState.Maximized
         Me.pnlRight.ResumeLayout(False)
         Me.pnlRight.PerformLayout()
         Me.pnlLeft.ResumeLayout(False)
-        'Me.FlowLayoutPanel1.ResumeLayout(False)
-        'Me.pnlGames.ResumeLayout(False)
-        'Me.pnlMusic.ResumeLayout(False)
-        'Me.pnlNetwork.ResumeLayout(False)
-        'Me.pnlApplication.ResumeLayout(False)
-        'Me.pnlFiles.ResumeLayout(False)
-        'Me.pnlSettings.ResumeLayout(False)
-        'Me.pnlHelp.ResumeLayout(False)
-        'Me.pnlPower.ResumeLayout(False)
         Me.ResumeLayout(False)
 
     End Sub

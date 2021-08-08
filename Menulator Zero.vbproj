@@ -463,6 +463,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="m.ico" />
+    <None Include="Resources\toasty.wav" />
+    <None Include="Resources\DanForden.png" />
     <None Include="Resources\joystick.png" />
     <None Include="Resources\blueload2.png" />
     <None Include="Resources\PinClipart.com_ground-hog-day-clip_1980971.png" />

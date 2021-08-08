@@ -62,7 +62,7 @@ Partial Public Class JoyApi
         'Constant poll gives all info except Guide button
 
         'Dim MaxDevices As Integer
-        Private lastInfo As NativeMethods.JOYINFOEX
+        Public lastInfo As NativeMethods.JOYINFOEX
         Public ReadOnly DeviceCaps As NativeMethods.JOYCAPS
         Public ReadOnly joyIndex As Integer
 
@@ -594,7 +594,7 @@ Partial Public Class JoyApi
 
         End Class
 
-        Private Class JoyInfoWithTimestamp
+        Public Class JoyInfoWithTimestamp
             Private _base As NativeMethods.JOYINFOEX
             Private _stampButtons() As Long
             Private _stampAxes() As Long
@@ -659,7 +659,7 @@ Partial Public Class JoyApi
 
 
         End Class
-        Private joyHistory As JoyInfoWithTimestamp
+        Public joyHistory As JoyInfoWithTimestamp
 
 
         Public Sub New(joyId As Integer)
@@ -802,7 +802,7 @@ Partial Public Class JoyApi
         Public Event JoyStickPOVUp As EventHandler(Of JoyStickButtonEventArgs)
         Public Event JoyStickPOVPress As EventHandler(Of JoyStickButtonPressEventArgs)
 
-        Public Sub PollEx(joyinfo As NativeMethods.JOYINFOEX)
+        Public Sub PollEx(ByRef joyinfo As NativeMethods.JOYINFOEX)
             'Dim joyinfo As New NativeMethods.JOYINFOEX
             'joyinfo.dwSize = Marshal.SizeOf(GetType(NativeMethods.JOYINFOEX))
             'joyinfo.dwFlags = NativeMethods.JOY_RETURNALL

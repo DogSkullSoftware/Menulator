@@ -153,6 +153,16 @@ Namespace My.Resources
         '''<summary>
         '''  Looks up a localized resource of type System.Drawing.Bitmap.
         '''</summary>
+        Friend ReadOnly Property DanForden() As System.Drawing.Bitmap
+            Get
+                Dim obj As Object = ResourceManager.GetObject("DanForden", resourceCulture)
+                Return CType(obj,System.Drawing.Bitmap)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized resource of type System.Drawing.Bitmap.
+        '''</summary>
         Friend ReadOnly Property dreamcast() As System.Drawing.Bitmap
             Get
                 Dim obj As Object = ResourceManager.GetObject("dreamcast", resourceCulture)
@@ -757,6 +767,15 @@ Namespace My.Resources
             Get
                 Dim obj As Object = ResourceManager.GetObject("spinner_arrow_forward_nofocus", resourceCulture)
                 Return CType(obj,System.Drawing.Bitmap)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        '''</summary>
+        Friend ReadOnly Property toasty() As System.IO.UnmanagedMemoryStream
+            Get
+                Return ResourceManager.GetStream("toasty", resourceCulture)
             End Get
         End Property
         

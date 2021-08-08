@@ -263,11 +263,10 @@ Public Class MenulatorListView
             e.Graphics.Transform = m
             m.Dispose()
             m = Nothing
-            Threading.Thread.EndCriticalRegion()
-            Exit Sub
+            GoTo theend
         End If
 
-        If l Is Nothing OrElse l.Count = 0 Then Return
+        If l Is Nothing OrElse l.Count = 0 Then GoTo theend
         Dim sf As New StringFormat With {
         .Alignment = StringAlignment.Center,
         .LineAlignment = StringAlignment.Near,
@@ -293,7 +292,7 @@ Public Class MenulatorListView
                 Dim ItemLocate = New Point(Padding.Left + (x * (ItemSize.Width + ItemPadding.X + ItemSpacingX)),
                                                                                                  Padding.Top + (y * (ItemSize.Height + ItemPadding.Y + ItemSpacingY)))
                 Dim itemrect = New RectangleF(ItemLocate, ItemSize)
-                If e.ClipRectangle.Contains(itemrect) Then
+                If e.ClipRectangle.IntersectsWith(itemrect) Then
                     With l(_ForIndex)
                         e.Graphics.FillRectangle(IIf(Index = _ForIndex, iconH, iconB), itemrect)
                         If _ForIndex = _AppsMenuParentIndex Then
@@ -386,6 +385,10 @@ Public Class MenulatorListView
         '    e.Graphics.FillRectangle(b, e.ClipRectangle)
         'End Using
 theend:
+        If danlocate <> Point.Empty Then
+            e.Graphics.DrawImage(My.Resources.DanForden, New Rectangle(danlocate, dansize), New Rectangle(Point.Empty, My.Resources.DanForden.Size), GraphicsUnit.Pixel)
+        End If
+
         Threading.Thread.EndCriticalRegion()
 
     End Sub
@@ -723,6 +726,39 @@ theend:
     End Function
 
 
+    Dim danlocate As Point
+    Dim dansize As Size
+    Public Async Sub Toasty(callback As Action)
+        If danlocate <> Point.Empty Then Exit Sub
+        danlocate = New Point(Me.Width, Me.Height)
+        dansize = My.Resources.DanForden.Size
+        dansize.Width = dansize.Width \ 2
+        dansize.Height = dansize.Height \ 2
+        Dim oldrect As Rectangle
+        oldrect = New Rectangle(Me.Width - dansize.Width, Me.Height - dansize.Height, dansize.Width, dansize.Height)
+        For x = Me.Width To Me.Width - dansize.Width Step -12
+            danlocate.X -= 12
+            danlocate.Y -= 12
+            'Refresh()
+            Invalidate(oldrect)
+            Await Task.Delay(1)
+        Next
+        My.Computer.Audio.Play(My.Resources.toasty, AudioPlayMode.Background)
+        If callback IsNot Nothing Then
+            callback.BeginInvoke(Nothing, Nothing)
+        End If
+        Await Task.Delay(800)
+        For x = Me.Width - dansize.Width To Me.Width Step 12
+
+            danlocate.X += 12
+            danlocate.Y += 12
+            'Refresh()
+            Invalidate(oldrect)
+            Await Task.Delay(1)
+        Next
+        danlocate = New Point
+    End Sub
+
 End Class
 
 Public Module mduHelper
@@ -732,6 +768,9 @@ Public Module mduHelper
 
     <Runtime.CompilerServices.Extension> Public Function Contains(r As Rectangle, r2 As RectangleF) As Boolean
         Return r.Contains(New Rectangle(r2.X, r2.Y, r2.Width, r2.Height))
+    End Function
+    <Runtime.CompilerServices.Extension> Public Function IntersectsWith(r As Rectangle, r2 As RectangleF) As Boolean
+        Return r.IntersectsWith(New Rectangle(r2.X, r2.Y, r2.Width, r2.Height))
     End Function
 
 End Module
