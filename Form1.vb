@@ -119,6 +119,8 @@ Public Class Form1
             End Set
         End Property
         Public Property AxisDirection As Integer
+
+        Public Property KeyboardKey As Keys
     End Class
 
     Dim myMame As MAME.App
@@ -148,6 +150,7 @@ Public Class Form1
 
     End Class
     Public myKeybindings As New Dictionary(Of String, MenulatorAction)
+    Public myJoystickBindings As New Dictionary(Of Integer, List(Of MenulatorJoystickAction))
     Dim myFavorites As New Favorites("Favorites.xml")
     Dim MyBad As New MarkedAsBad("Favorites.xml")
 
@@ -335,6 +338,8 @@ Public Class Form1
             '    frmMsg.Msgbox("Verification complete! " & FormatNumber(i, 0,,, TriState.True) & " ROM(s) verified.", vbOKOnly)
             'End If
         End If
+        'MAME.MameXml.VerifyRoms(strMamePath)
+
 
         InitializeComponents()
 
@@ -369,7 +374,7 @@ Public Class Form1
                     myGamesMenu.Add("MAME", New NewUIListItem() With {.Dock = DockStyle.Left, .Height = 48, .Width = pnlLeft.Width - 28,
                                         .Text = y.InnerText, .Tag = "MAME", .Image = My.Resources.MAME, .ClickHandler = Sub()
                                                                                                                             ListMAME(ListMAMEDefaultClause(Function(z As XElement) As Boolean
-                                                                                                                                                               Return Not z.<genre>.Value.Contains("* Mature *")
+                                                                                                                                                               Return Not (z.<genre>.Value.Contains("* Mature *") Or z.<genre>.Value.Contains("Pinball"))
                                                                                                                                                            End Function))
                                                                                                                             pnlLeft.Visible = False
                                                                                                                         End Sub,
@@ -460,6 +465,7 @@ Public Class Form1
         Next
 
         myKeybindings.Clear()
+        myJoystickBindings.Clear()
 
         For Each x As Xml.XmlElement In file.SelectNodes("descendant::keybinding")
             For Each y As Xml.XmlNode In x.ChildNodes
@@ -473,6 +479,16 @@ Public Class Form1
                                                                                                                                        .Axis = InferStringValue(z2.Attributes("axis")),
                                                                                                                                        .AxisDirection = If(InferStringValue(z2.Attributes("value")) = "-", -1, 1)})
                     }
+                For Each z2 As Xml.XmlNode In y.SelectNodes("descendant::joystick")
+                    If Not myJoystickBindings.ContainsKey(z2.Attributes("id").Value) Then
+                        myJoystickBindings.Add(z2.Attributes("id").Value, New List(Of MenulatorJoystickAction))
+                    End If
+                    myJoystickBindings(z2.Attributes("id").Value).Add(New MenulatorJoystickAction() With {.Id = z2.Attributes("id").Value,
+                                                                                                                                       .Button = InferStringValue(z2.Attributes("button")),
+                                                                                                                                       .Axis = InferStringValue(z2.Attributes("axis")),
+                                                                                                                                       .AxisDirection = If(InferStringValue(z2.Attributes("value")) = "-", -1, 1),
+                                                                                                                                       .KeyboardKey = a.KeyboardKey})
+                Next
                 If myKeybindings.ContainsKey(a.Name) Then
                     myKeybindings(a.Name) = a
                 Else
@@ -853,11 +869,6 @@ Public Class Form1
     End Function
 
 
-    'Protected Overrides Sub OnResize(e As EventArgs)
-    '    MyBase.OnResize(e)
-    '    If myList IsNot Nothing Then Me.Text = "Showing Index: " & myList.VisibleIndexRange(0) & " | " & myList.VisibleIndexRange(1) & " | Count " & myList.m.Count  'Me.Text = myList.m.Count & " | " & myList.ItemsPerX & " | " & myList.ItemSpacingX & " | " & myList.VisibleItemCount
-    'End Sub
-
 #Region "ROM Acquistion"
     Private Sub ListMAME()
         ListMAME(ListMAMEDefaultClause)
@@ -881,7 +892,10 @@ Public Class Form1
         Else
             myMame_XML.Init(whereClause)
         End If
-
+        If myMame_XML.Count = 0 Then
+            PerformMameVerification("No MAME roms found. Start MAME Rom Verification? This process can take 30-60 minutes depending on number of roms.")
+            Exit Sub
+        End If
         myList.GameList = myMame_XML.GetNextX(myMame_XML.Count)
 
 
@@ -1778,7 +1792,7 @@ Public Class Form1
             '    e.Handled = True
             Case myKeybindings("AltAction").KeyboardKey
                 Dim result As New NewUIListItem.NewUIListItemClickedEvent
-                If SubMenuIndex(SubMenuDepth) >= 0 AndAlso subMenus(SubMenuDepth).Controls.Count Then DirectCast(subMenus(SubMenuDepth).Controls(SubMenuIndex(SubMenuDepth)), NewUIListItem).PerformAltClick (result)
+                If SubMenuIndex(SubMenuDepth) >= 0 AndAlso subMenus(SubMenuDepth).Controls.Count Then DirectCast(subMenus(SubMenuDepth).Controls(SubMenuIndex(SubMenuDepth)), NewUIListItem).PerformAltClick(result)
                 e.Handled = result.Handled
                 If result.CloseMenu Then
                     If result.CloseAllMenu Then
@@ -1983,7 +1997,7 @@ Public Class Form1
                 pnlRight.Visible = False
                 e.Handled = True
         End Select
-        e.Handled = True
+        'e.Handled = True
     End Sub
 
     <DllImport("user32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
@@ -2077,16 +2091,23 @@ Public Class Form1
 
         Select Case e.KeyCode
                 'mylist handling
-            Case Keys.T
-                myList.Toasty(Nothing)
+
             Case myKeybindings("Start1").KeyboardKey
 
                 If Controllers(0).lastInfo.IsAxisMin(1, Controllers(0).DeviceCaps) Then
-                    myList.Toasty(Nothing)
+                    myList.Toasty(Sub()
+                                      If myList.GameList IsNot Nothing AndAlso myList.GameList.Count Then
+                                          myList.Index = New Random().Next(0, myList.GameList.Count - 1)
+                                      End If
+                                  End Sub)
                 End If
             Case myKeybindings("Start2").KeyboardKey
                 If Controllers(1).lastInfo.IsAxisMin(1, Controllers(1).DeviceCaps) Then
-                    myList.Toasty(Nothing)
+                    myList.Toasty(Sub()
+                                      If myList.GameList IsNot Nothing AndAlso myList.GameList.Count Then
+                                          myList.Index = New Random().Next(0, myList.GameList.Count - 1)
+                                      End If
+                                  End Sub)
                 End If
 
             Case myKeybindings("Action").KeyboardKey ' Keys.Return
@@ -2193,32 +2214,39 @@ Public Class Form1
                 'myList.RefreshIndex(8)
                 OnResize(Nothing)
             Case myKeybindings("MameVerification").KeyboardKey
-                'Me.Text = MAME.App.Version("D:\games\emulation\mame\mame64.exe")
+                PerformMameVerification()
 
-                If frmMsg.Msgbox("Start MAME Rom Verification?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
-                    myList.Dump()
-                    Dim worker As New BackgroundWorker
-
-                    myList.EnableWait = True
-                    AddHandler worker.DoWork, Sub(zsender As Object, eargs As DoWorkEventArgs)
-                                                  Dim i = MameXml.VerifyRoms(myMame.MamePath)
-
-                                                  frmMsg.Msgbox("Verified " & FormatNumber(i, 0,,, TriState.True) & " ROMs")
-                                              End Sub
-                    AddHandler worker.RunWorkerCompleted, Sub(zsender As Object, eargs As RunWorkerCompletedEventArgs)
-                                                              'myList.EnableWait = False
-                                                              '' myList.ReInit()
-                                                              'myMame_XML.Init(Function() True)
-                                                              'myList.Index = 0
-                                                              Me.ListMAME()
-                                                          End Sub
-                    worker.RunWorkerAsync()
-                End If
                 e.Handled = True
             Case Keys.D0
                 frmMsg.Msgbox("This is a pretty long string but there are no line breaks here. Hopefully the size calculated will allow all of this text to fit! But we must add more to ensure that a line wrap will occur or not? THis is a very high resolution monitor! Need to add even more characters in order to cause a line wrap since so many charactrers can fit horizontally. You know, that is probably an issue, should increase font size!")
         End Select
         'e.Handled = True
+    End Sub
+
+    Public Sub PerformMameVerification(Optional strMessage As String = "Start MAME Rom Verification? This process can take 30-60 minutes depending on number of roms.")
+        'Me.Text = MAME.App.Version("D:\games\emulation\mame\mame64.exe")
+        If frmMsg.Msgbox(strMessage, MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
+
+            myList.Dump()
+            myMame_XML.Dispose()
+
+            myList.EnableWait = True
+            Dim worker As New BackgroundWorker
+
+            myList.EnableWait = True
+            AddHandler worker.DoWork, Sub(zsender As Object, eargs As DoWorkEventArgs)
+                                          Dim i = MameXml.VerifyRoms(myMame.MamePath)
+
+                                          frmMsg.Msgbox("Verified " & FormatNumber(i, 0,,, TriState.True) & " ROMs")
+                                      End Sub
+            AddHandler worker.RunWorkerCompleted, Sub(zsender As Object, eargs As RunWorkerCompletedEventArgs)
+                                                      myMame_XML = New MameXml()
+                                                      Dim z As New NewUIListItem.NewUIListItemClickedEvent()
+                                                      myList.EnableWait = False
+                                                      myGamesMenu("MAME").PerformClick(z)
+                                                  End Sub
+            worker.RunWorkerAsync()
+        End If
     End Sub
 
 #Region "Filter"
@@ -2231,7 +2259,7 @@ Public Class Form1
         myList.EnableWait = True
         Dim worker As New BackgroundWorker
         AddHandler worker.DoWork, Sub(s2 As Object, o As DoWorkEventArgs)
-                                      Dim filterMature As Boolean = o.Argument(0)
+                                      Dim filterAllowMature As Boolean = o.Argument(0)
                                       Dim filterDescription As String = o.Argument(1)
                                       Dim filterPlayers As String = o.Argument(2)
                                       Dim filterPlayersOp As Integer = o.Argument(3)
@@ -2243,7 +2271,7 @@ Public Class Form1
 
                                       ListMAME(Function(x As XElement) As Boolean
 
-                                                   If filterMature AndAlso x.<genre>.Value.Contains("* Mature *") Then Return False
+                                                   If filterAllowMature = False AndAlso x.<genre>.Value.Contains("* Mature *") Then Return False
 
                                                    If String.IsNullOrEmpty(filterDescription) And String.IsNullOrEmpty(filterPlayers) And String.IsNullOrEmpty(filterYear) And String.IsNullOrEmpty(filterGenre) And String.IsNullOrEmpty(filterRating) Then
                                                        Return True
@@ -2991,7 +3019,6 @@ Public Class Form1
             End With
         End If
     End Sub
-
     Private Sub Form1_JoyStickPOVPress(sender As Object, e As JoyApi.Joystick.JoyStickButtonPressEventArgs) Handles Me.JoyStickPOVPress
         If InGame = False OrElse (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
             With e.RawJoyInfo
@@ -3037,21 +3064,31 @@ Public Class Form1
             '            End If
             '    End Select
             'Else
-            Select Case e.AxisID
-                    Case 0
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.LEFT)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.RIGHT)
-                        End If
-                    Case 1
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.UP)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.DOWN)
-                        End If
+            'Select Case e.AxisID
+            '        Case 0
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.LEFT)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.RIGHT)
+            '            End If
+            '        Case 1
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.UP)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.DOWN)
+            '            End If
 
-                End Select
+            '    End Select
+            If myJoystickBindings.ContainsKey(sender.joyindex) Then
+                For Each axis In (From a In myJoystickBindings(sender.joyindex) Where a.Axis = e.AxisID)
+                    If (e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) And axis.AxisDirection < 0) Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(axis.KeyboardKey)
+                    ElseIf (e.RawJoyInfo.IsAxisMax(e.AxisID, Controllers(sender.joyindex).DeviceCaps) And axis.AxisDirection > 0) Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(axis.KeyboardKey)
+
+                    End If
+                Next
+            End If
             'End If
         End If
     End Sub
@@ -3070,22 +3107,29 @@ Public Class Form1
             '            End If
             '    End Select
             'Else
-            Select Case e.AxisID
-                    Case 0
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.LEFT)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.RIGHT)
-                        End If
-                    Case 1
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.UP)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.DOWN)
-                        End If
+            'Select Case e.AxisID
+            '        Case 0
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.LEFT)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.RIGHT)
+            '            End If
+            '        Case 1
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.UP)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyUp(WindowsInput.VirtualKeyCode.DOWN)
+            '            End If
 
-                End Select
-            'End If
+            '    End Select
+            ''End If
+            If myJoystickBindings.ContainsKey(sender.joyindex) Then
+                For Each axis In (From a In myJoystickBindings(sender.joyindex) Where a.Axis = e.AxisID)
+                    If (e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F And axis.AxisDirection < 0) OrElse (e.RawJoyInfo.IsAxisMax(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F And axis.AxisDirection > 0) Then
+                        WindowsInput.InputSimulator.SimulateKeyUp(axis.KeyboardKey)
+                    End If
+                Next
+            End If
         End If
     End Sub
 
@@ -3103,22 +3147,28 @@ Public Class Form1
             '            End If
             '    End Select
             'Else
-
-            Select Case e.AxisID
-                    Case 0
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.LEFT)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.RIGHT)
-                        End If
-                    Case 1
-                        If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
-                            WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.UP)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.DOWN)
-                        End If
-                End Select
-            'End If
+            If myJoystickBindings.ContainsKey(sender.joyindex) Then
+                For Each axis In (From a In myJoystickBindings(sender.joyindex) Where a.Axis = e.AxisID)
+                    If (e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F And axis.AxisDirection < 0) OrElse (e.RawJoyInfo.IsAxisMax(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F And axis.AxisDirection > 0) Then
+                        WindowsInput.InputSimulator.SimulateKeyPress(axis.KeyboardKey)
+                    End If
+                Next
+            End If
+            'Select Case e.AxisID
+            '        Case 0
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.LEFT)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.RIGHT)
+            '            End If
+            '        Case 1
+            '            If e.RawJoyInfo.IsAxisMin(e.AxisID, Controllers(sender.joyindex).DeviceCaps) < 0F Then
+            '                WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.UP)
+            '            Else
+            '                WindowsInput.InputSimulator.SimulateKeyPress(WindowsInput.VirtualKeyCode.DOWN)
+            '            End If
+            '    End Select
+            ''End If
         End If
     End Sub
 
@@ -3127,87 +3177,93 @@ Public Class Form1
             If needJoyId Then NeedJoyIDCallback.Invoke(sender, e) : needJoyId = False : Exit Sub
 
 
-            Dim i = (From a In myKeybindings From b In a.Value.Joystick Where b.Id = sender.joyindex And b.Button = Math.Min(e.buttonID + 1, 512))
+            'Dim i = (From a In myKeybindings From b In a.Value.Joystick Where b.Id = sender.joyindex And b.Button = Math.Min(e.buttonID + 1, 512))
 
-            If i IsNot Nothing Then
-                For Each a In i
-                    WindowsInput.InputSimulator.SimulateKeyDown(a.a.Value.KeyboardKey)
+            'If i IsNot Nothing Then
+            '    For Each a In i
+            '        WindowsInput.InputSimulator.SimulateKeyDown(a.a.Value.KeyboardKey)
+            '        e.Handled = True
+            '    Next
+            'End If
+            If myJoystickBindings.ContainsKey(sender.joyindex) Then
+                For Each button In (From a In myJoystickBindings(sender.joyindex) Where a.Button = e.buttonID + 1)
+                    WindowsInput.InputSimulator.SimulateKeyDown(button.KeyboardKey)
                     e.Handled = True
                 Next
             End If
             Exit Sub
 
 
-            Select Case e.buttonID
-                Case 0
-                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.Return)
-                        e.Handled = True
-                    End If
-                Case 1
-                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.BACK)
-                        e.Handled = True
-                    End If
-                Case 2
-                    If sender.joyindex = 2 Then
-                        'WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.PAUSE)
+                Select Case e.buttonID
+                    Case 0
+                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.Return)
+                            e.Handled = True
+                        End If
+                    Case 1
+                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.BACK)
+                            e.Handled = True
+                        End If
+                    Case 2
+                        If sender.joyindex = 2 Then
+                            'WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.PAUSE)
+                            'e.Handled = True
+
+                            Dim data(0) As frmMenulator.INPUT
+                            data(0).type = frmMenulator.INPUT_TYPE.INPUT_KEYBOARD
+                            data(0).ki.wVk = 0
+                            data(0).ki.wScan = WindowsInput.VirtualKeyCode.PAUSE
+                            data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE
+
+                            'data(1).ki.wVk = WindowsInput.VirtualKeyCode.PAUSE
+                            'data(1).ki.dwFlags = 2
+
+                            frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
+                            Threading.Thread.Sleep(50)
+
+                            data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE Or WindowsInput.KeyboardFlag.KEYUP
+
+                            frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
+                            Threading.Thread.Sleep(50)
+                        Else
+                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F2)
+                            e.Handled = True
+                        End If
+                    Case 3
+                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.APPS)
+                            e.Handled = True
+                        End If
+                    Case 4
+                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F5)
+                            e.Handled = True
+                        End If
+                    Case 5
+                        If sender.joyindex = 2 Then
+                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F12)
+                            e.Handled = True
+                        End If
+                    Case 6
+                    Case 7
+
+
+                    Case 8
+                        'If sender.joyindex = 2 Then
+                        '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
                         'e.Handled = True
-
-                        Dim data(0) As frmMenulator.INPUT
-                        data(0).type = frmMenulator.INPUT_TYPE.INPUT_KEYBOARD
-                        data(0).ki.wVk = 0
-                        data(0).ki.wScan = WindowsInput.VirtualKeyCode.PAUSE
-                        data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE
-
-                        'data(1).ki.wVk = WindowsInput.VirtualKeyCode.PAUSE
-                        'data(1).ki.dwFlags = 2
-
-                        frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
-                        Threading.Thread.Sleep(50)
-
-                        data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE Or WindowsInput.KeyboardFlag.KEYUP
-
-                        frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
-                        Threading.Thread.Sleep(50)
-                    Else
-                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F2)
-                        e.Handled = True
-                    End If
-                Case 3
-                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.APPS)
-                        e.Handled = True
-                    End If
-                Case 4
-                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F5)
-                        e.Handled = True
-                    End If
-                Case 5
-                    If sender.joyindex = 2 Then
-                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F12)
-                        e.Handled = True
-                    End If
-                Case 6
-                Case 7
+                        'End If
+                End Select
+            ElseIf (InGame AndAlso MenulatorGameMenu IsNot Nothing AndAlso Not MenulatorGameMenu.Visible) Then
+                'see if special button is pressed
+                'If e.RawJoyInfo.IsButtonPressed(JoyApi.Joystick.NativeMethods.JoyButtons.JOY_BUTTON10) Then
+                '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
+                '    'MenulatorGameMenu.KeyHook_KeyDown(New frmMenulator.KeyboardHook.KeyEventArgsEx(Keys.Space))
+                'End If
 
 
-                Case 8
-                    'If sender.joyindex = 2 Then
-                    '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
-                    'e.Handled = True
-                    'End If
-            End Select
-        ElseIf (InGame AndAlso MenulatorGameMenu IsNot Nothing AndAlso Not MenulatorGameMenu.Visible) Then
-            'see if special button is pressed
-            'If e.RawJoyInfo.IsButtonPressed(JoyApi.Joystick.NativeMethods.JoyButtons.JOY_BUTTON10) Then
-            '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
-            '    'MenulatorGameMenu.KeyHook_KeyDown(New frmMenulator.KeyboardHook.KeyEventArgsEx(Keys.Space))
-            'End If
-
-
-        End If
+            End If
     End Sub
 #End Region
 

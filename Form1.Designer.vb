@@ -94,7 +94,8 @@ Partial Class Form1
         Me.chkMature.RightToLeft = System.Windows.Forms.RightToLeft.Yes
         Me.chkMature.Size = New System.Drawing.Size(171, 39)
         Me.chkMature.TabIndex = 9
-        Me.chkMature.Text = "Block Mature"
+
+        Me.chkMature.Text = "Show Mature"
         Me.chkMature.UseCompatibleTextRendering = True
         Me.chkMature.UseVisualStyleBackColor = True
         '

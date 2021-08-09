@@ -349,23 +349,28 @@ Public Class MenulatorListView
 
         If menuParentRect <> RectangleF.Empty AndAlso AppsMenu IsNot Nothing Then
             Dim menu_r = New Rectangle(menuParentRect.Right, menuParentRect.Y, 200, (AppsMenu.Count * 32) + (AppsMenu.Count * 4))
+            If menu_r.Right > Me.Width Then
+                menu_r = New Rectangle(New Point(menuParentRect.Left - 200, menuParentRect.Y), menu_r.Size)
+            End If
+
+
             e.Graphics.FillRectangle(SystemBrushes.ControlLight, menu_r)
             menu_r.Height = 32
 
-            For x2 As Integer = 0 To AppsMenu.Count - 1
-                If x2 = _AppsMenuIndex Then
-                    e.Graphics.FillRectangle(iconH, New Rectangle(menu_r.X, menu_r.Y, menu_r.Width, menu_r.Height + 2))
-                End If
-                e.Graphics.DrawImage(AppsMenu(x2).Image, ScaleRect(AppsMenu(x2).Image.Size, New Rectangle(menu_r.X + 5, menu_r.Y + 2, 32, 32)))
+                For x2 As Integer = 0 To AppsMenu.Count - 1
+                    If x2 = _AppsMenuIndex Then
+                        e.Graphics.FillRectangle(iconH, New Rectangle(menu_r.X, menu_r.Y, menu_r.Width, menu_r.Height + 2))
+                    End If
+                    e.Graphics.DrawImage(AppsMenu(x2).Image, ScaleRect(AppsMenu(x2).Image.Size, New Rectangle(menu_r.X + 5, menu_r.Y + 2, 32, 32)))
 
-                e.Graphics.DrawString(AppsMenu(x2).Text, Me.Font, Brushes.Black, New Rectangle(menu_r.X + 5 + 5 + 32, menu_r.Y + 2, menu_r.Width - 5 - 5 - 32, menu_r.Height))
-                menu_r.Y += 32 + 4
-            Next
-        End If
+                    e.Graphics.DrawString(AppsMenu(x2).Text, Me.Font, Brushes.Black, New Rectangle(menu_r.X + 5 + 5 + 32, menu_r.Y + 2, menu_r.Width - 5 - 5 - 32, menu_r.Height))
+                    menu_r.Y += 32 + 4
+                Next
+            End If
 
-        'draw thumb
-        'Dim maxHeight = ((ItemsPerY * ItemSize.Height) + ((ItemsPerY - 1) * ItemSpacingY) + ItemPadding.Y)
-        Dim thumbHeight = VisibleItemCount() / (l.Count + 1) * Height
+            'draw thumb
+            'Dim maxHeight = ((ItemsPerY * ItemSize.Height) + ((ItemsPerY - 1) * ItemSpacingY) + ItemPadding.Y)
+            Dim thumbHeight = VisibleItemCount() / (l.Count + 1) * Height
             Dim maxPages = Math.Ceiling((l.Count + 1) / VisibleItemCount())
             Dim pageProgress = _page / (maxPages - 1)
             'Debug.Print(thumbHeight )
