@@ -10,13 +10,14 @@ Public Class frmMsg
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
+        ' Me.AccentState = eAccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND
         Me.EnableBlur()
         Font = New Font("Malgun Gothic", 25.0F)
         SetStyle(ControlStyles.UserPaint, True)
         SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
         SetStyle(ControlStyles.SupportsTransparentBackColor, True)
         'BackColor = Color.LimeGreen
-        TransparencyKey = BackColor
+        'TransparencyKey = BackColor
         _foreColor = New SolidBrush(Me.ForeColor)
     End Sub
 
@@ -40,14 +41,17 @@ Public Class frmMsg
 
         End If
         If (buttons And MsgBoxStyle.Critical) = MsgBoxStyle.Critical Then
-
+            lblIcon.BackColor = Color.Red
+            lblIcon.Text = "⚠"
         End If
 
         If (buttons And MsgBoxStyle.Exclamation) = MsgBoxStyle.Exclamation Then
-
+            lblIcon.BackColor = Color.Orange
+            lblIcon.Text = "❕"
         End If
         If (buttons And MsgBoxStyle.Information) = MsgBoxStyle.Information Then
-
+            lblIcon.BackColor = Color.Blue
+            lblIcon.Text = "ⅈ"
         End If
         If (buttons And MsgBoxStyle.MsgBoxHelp) = MsgBoxStyle.MsgBoxHelp Then
             HelpButton = True
@@ -62,7 +66,8 @@ Public Class frmMsg
 
         End If
         If (buttons And MsgBoxStyle.Question) = MsgBoxStyle.Question Then
-
+            lblIcon.BackColor = Color.LightGray
+            lblIcon.Text = "❓"
         End If
         If (buttons And MsgBoxStyle.SystemModal) = MsgBoxStyle.SystemModal Then
 
@@ -72,14 +77,18 @@ Public Class frmMsg
         Dim buttonset As Boolean = False
         If (buttons And MsgBoxStyle.DefaultButton2) = MsgBoxStyle.DefaultButton2 Then
             AcceptButton = Button2
+
+            Button2.Select()
             buttonset = True
         End If
         If (buttons And MsgBoxStyle.DefaultButton3) = MsgBoxStyle.DefaultButton3 Then
             AcceptButton = Button3
+            Button3.Select()
             buttonset = True
         End If
         If buttonset = False Then '(buttons And MsgBoxStyle.DefaultButton1) = MsgBoxStyle.DefaultButton1 Then
             AcceptButton = Button1
+            Button1.Select()
         End If
         buttonset = False
         If (buttons And MsgBoxStyle.AbortRetryIgnore) = MsgBoxStyle.AbortRetryIgnore Then
@@ -89,7 +98,7 @@ Public Class frmMsg
             buttonset = True
         End If
         If (buttons And MsgBoxStyle.OkCancel) = MsgBoxStyle.OkCancel Then
-            Button1.Text = "Ok"
+            Button1.Text = "OK"
             Button1.Tag = DialogResult.OK
             Button2.Text = "Cancel"
             Button2.Tag = DialogResult.Cancel
@@ -123,7 +132,7 @@ Public Class frmMsg
             buttonset = True
         End If
         If buttonset = False Then ' (buttons And MsgBoxStyle.OkOnly) = MsgBoxStyle.OkOnly Then
-            Button1.Text = "Ok"
+            Button1.Text = "OK"
             Button1.Tag = DialogResult.OK
             Controls.Remove(Button2)
             Controls.Remove(Button3)
@@ -131,26 +140,63 @@ Public Class frmMsg
         End If
 
         'msg = strMsg
-        Text = Title
-        Label1.Text = strMsg
-        Dim testRect = ClientSize
-        testRect = TextRenderer.MeasureText(strMsg, Font, testRect, TextFormatFlags.NoClipping)
-
+        Label1.Text = Title.ToUpper
+        Label2.Text = strMsg
+        Dim testRect As SizeF = Label2.Size
+        Using g As Graphics = Graphics.FromHwnd(Me.Handle)
+            'testRect = TextRenderer.MeasureText(strMsg, Label2.Font, testRect, TextFormatFlags.)
+            testRect = g.MeasureString(strMsg, Label2.Font, Label2.Width)
+        End Using
+        Label2.Height = Math.Max(testRect.Height, 34)
+        Height = Math.Min(Label2.Height + 132 + 5, Screen.FromControl(Me).WorkingArea.Height - 25)
         'Width += 32
-        Height += 54 + 25
+        'Height += 54 + 25
+
+        'Button1.TurnOffRender = True
+        'Button2.TurnOffRender = True
+        'Button3.TurnOffRender = True
+        'Label1.TurnOffRender = True
+        'Label2.TurnOffRender = True
+        'lblIcon.TurnOffRender = True
     End Sub
 
     Public Shared Function Msgbox(strMsg As String, Optional buttons As MsgBoxStyle = MsgBoxStyle.ApplicationModal Or MsgBoxStyle.OkOnly, Optional Title As String = "") As MsgBoxResult
         Dim f As New frmMsg(strMsg, buttons, Title)
-
         Return f.ShowDialog(My.Forms.Form1)
     End Function
     Public BackgroundColor As Color = Color.FromArgb(45, 45, 48)
     Dim iconB As New SolidBrush(BackgroundColor)
     Protected Overrides Sub OnPaint(e As PaintEventArgs)
         MyBase.OnPaint(e)
+        'e.Graphics.SmoothingMode = Drawing2D.SmoothingMode.HighQuality
+        'e.Graphics.CompositingQuality = Drawing2D.CompositingQuality.HighQuality
+        'e.Graphics.InterpolationMode = Drawing2D.InterpolationMode.HighQualityBilinear
+        'e.Graphics.TextRenderingHint = Drawing.Text.TextRenderingHint.ClearTypeGridFit
+        'e.Graphics.TranslateTransform(Button1.Left, Button1.Top)
+        'Button1.DoPaint(e)
+        'e.Graphics.TranslateTransform(-Button1.Left, -Button1.Top)
+        'e.Graphics.TranslateTransform(Button2.Left, Button2.Top)
+        'Button2.DoPaint(e)
+        'e.Graphics.TranslateTransform(-Button2.Left, -Button2.Top)
+        'e.Graphics.TranslateTransform(Button3.Left, Button3.Top)
+        'Button3.DoPaint(e)
+        'e.Graphics.TranslateTransform(-Button3.Left, -Button3.Top)
+
+        'e.Graphics.TranslateTransform(Label1.Left, Label1.Top)
+        'Label1.DoPaint(e)
+        'e.Graphics.TranslateTransform(-Label1.Left, -Label1.Top)
+        'e.Graphics.TranslateTransform(Label2.Left, Label2.Top)
+        'Label2.DoPaint(e)
+        'e.Graphics.TranslateTransform(-Label2.Left, -Label2.Top)
+        'e.Graphics.TranslateTransform(lblIcon.Left, lblIcon.Top)
+        'lblIcon.DoPaint(e)
+        'e.Graphics.TranslateTransform(-lblIcon.Left, -lblIcon.Top)
 
     End Sub
+    Private Sub Button1_GotFocus(sender As Object, e As EventArgs) Handles Button1.GotFocus, Button1.LostFocus, Button2.GotFocus, Button2.LostFocus, Button3.GotFocus, Button3.LostFocus
+        Refresh()
+    End Sub
+
     Protected Friend Overrides Sub OnJoyStickAxisDown(sender As Object, e As JoyApi.Joystick.JoyStickAxisEventArgs)
         If JoyTestMode Then
             JoyTestOutput = {sender, e}
@@ -283,6 +329,5 @@ Public Class frmMsg
         Me.DialogResult = sender.tag
         Me.Close()
     End Sub
-
 
 End Class

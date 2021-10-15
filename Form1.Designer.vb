@@ -2,6 +2,7 @@
 Partial Class Form1
     Inherits WindowExtension
 
+
     'Form overrides dispose to clean up the component list.
     <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
@@ -92,9 +93,8 @@ Partial Class Form1
         Me.chkMature.Location = New System.Drawing.Point(18, 581)
         Me.chkMature.Name = "chkMature"
         Me.chkMature.RightToLeft = System.Windows.Forms.RightToLeft.Yes
-        Me.chkMature.Size = New System.Drawing.Size(171, 39)
+        Me.chkMature.Size = New System.Drawing.Size(172, 39)
         Me.chkMature.TabIndex = 9
-
         Me.chkMature.Text = "Show Mature"
         Me.chkMature.UseCompatibleTextRendering = True
         Me.chkMature.UseVisualStyleBackColor = True
@@ -304,9 +304,6 @@ Partial Class Form1
         Me.lblTime.Size = New System.Drawing.Size(286, 32)
         Me.lblTime.TabIndex = 3
         Me.lblTime.Text = "Label12"
-
-
-
         '
         'Form1
         '

@@ -1,0 +1,147 @@
+﻿{
+  "id": "Menulator",
+  "display": "Menulator",
+  "menu": [
+    {
+      "id": "pnlGames",
+      "display": "Games",
+      "icon": "icon_wm10_games"
+    },
+    {
+      "id": "pnlMusic",
+      "display": "Music",
+      "icon": "icon_wm10_audio",
+      "menu": [
+        {
+          "id": "wmpNowPlaying",
+          "display": "Now Playing",
+          "icon": "_211876_play_icon",
+          "altmenu": [
+            {
+              "id": "wmpPlay",
+              "display": "Play",
+              "icon": "icons8_play_32"
+            },
+            {
+              "id": "wmpStop",
+              "display": "Stop",
+              "icon": "icons8_stop_32"
+            },
+            {
+              "id": "wmpPrev",
+              "display": "Prev",
+              "icon": "icons8_skip_to_start_32"
+            },
+            {
+              "id": "wmpNext",
+              "display": "Next",
+              "icon": "icons8_end_32"
+            },
+            {
+              "id": "wmpRandom",
+              "display": "Random",
+              "icon": "icons8_triple_arrows_32"
+            },
+            {
+              "id": "wmpRepeat",
+              "display": "Repeat",
+              "icon": "icons8_repeat_32"
+            }
+          ]
+        },
+        {
+          "id": "wmpArtist",
+          "display": "Artist",
+          "icon": "music_2_64"
+        },
+        {
+          "id": "wmpAlbum",
+          "display": "Album",
+          "icon": "cd_64"
+        },
+        {
+          "id": "wmpGenre",
+          "display": "Genre",
+          "icon": "icons8_concert_day_64"
+        },
+        {
+          "id": "wmpPlaylists",
+          "display": "Playlists",
+          "icon": "audio_file_64"
+        }
+      ]
+    },
+    {
+      "id": "pnlNetwork",
+      "display": "Network",
+      "icon": "icon_wm10_globe"
+    },
+    {
+      "id": "pnlApps",
+      "display": "Application",
+      "icon": "icon_wm10_gotostart"
+    },
+    {
+      "id": "pnlFiles",
+      "display": "File Explorer",
+      "icon": "icon_wm10_folder"
+    },
+    {
+      "id": "pnlSettings",
+      "display": "Settings",
+      "icon": "icon_wm10_settings2",
+      "menu": [
+        {
+          "id": "setEmulator",
+          "display": "Emulator Settings",
+          "icon": "application_settings"
+        },
+        {
+          "id": "setJoystickRemap",
+          "display": "Joystick Remap",
+          "icon": "joystick"
+        }
+      ]
+    },
+    {
+      "id": "pnlHelp",
+      "display": "Help",
+      "icon": "icon_wm10_help",
+      "menu": [
+        {
+          "id": "helpWebsite",
+          "display": "Website",
+          "icon": "icon_wm10_folder"
+        }
+      ]
+    },
+    {
+      "id": "pnlPower",
+      "display": "Power",
+      "icon": "notifications_powermenu_icon_standby",
+      "menu": [
+        {
+          "id": "Close",
+          "display": "Close Menulator",
+          "icon": "notifications_powermenu_icon_close"
+        },
+        {
+          "id": "ApplicationRestart",
+          "display": "Restart Menulator",
+          "icon": "notifications_powermenu_icon_restart"
+        },
+        {
+          "id": "Restart",
+          "display": "Restart Computer",
+          "icon": "notifications_powermenu_icon_restart"
+        },
+        {
+          "id": "Shutdown",
+          "display": "Shutdown Computer",
+          "icon": "notifications_powermenu_icon_shutdown"
+        }
+      ]
+    }
+  ]
+}
+  

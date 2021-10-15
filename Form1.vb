@@ -8,8 +8,28 @@ Imports MAME
 <DebuggerStepThrough>
 Module submain
     <MTAThread>
-    Public Sub main()
+    Public Sub Main()
+        AddHandler Application.ThreadException, AddressOf MyGlobalExceptionHandler
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException)
+        AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf CurrentDomain_UnhandledException
         Application.Run(Form1)
+    End Sub
+    Sub MyGlobalExceptionHandler(ByVal sender As Object, ByVal e As System.Threading.ThreadExceptionEventArgs)
+        frmMsg.Msgbox(e.Exception.Message, MsgBoxStyle.OkOnly, e.Exception.ToString)
+        Application.Exit()
+    End Sub
+    Sub CurrentDomain_UnhandledException(sender As Object, e As UnhandledExceptionEventArgs)
+        If e.IsTerminating Then
+            frmMsg.Msgbox(DirectCast(e.ExceptionObject, Exception).Message, MsgBoxStyle.OkOnly, e.ExceptionObject.ToString)
+        Else
+            Select Case frmMsg.Msgbox(DirectCast(e.ExceptionObject, Exception).Message, MsgBoxStyle.AbortRetryIgnore, e.ExceptionObject.ToString)
+                Case MsgBoxResult.Abort
+                    Application.Exit()
+                Case MsgBoxResult.Retry
+
+                Case MsgBoxResult.Ignore
+            End Select
+        End If
     End Sub
 End Module
 
@@ -121,6 +141,15 @@ Public Class Form1
         Public Property AxisDirection As Integer
 
         Public Property KeyboardKey As Keys
+
+        Public Overrides Function ToString() As String
+            If iButton > 0 Then
+                Return "{Id=" & Id & ";Button=" & iButton & ";Key=" & KeyboardKey.ToString & "}"
+            Else
+                Return "{Id=" & Id & ";Axis=" & iAxis & ";Direction=" & AxisDirection & ";Key=" & KeyboardKey.ToString & "}"
+            End If
+        End Function
+
     End Class
 
     Dim myMame As MAME.App
@@ -135,6 +164,8 @@ Public Class Form1
 
     Dim myGamesMenu As New Dictionary(Of String, NewUIListItem)
     Dim myEmulatorList As New EmulatorDictionary
+    Dim WithEvents myWMP As New WMPLib.WindowsMediaPlayer
+
     Private Class EmulatorDictionary
         Inherits Collections.ObjectModel.Collection(Of Emulator)
         Default Public Overloads ReadOnly Property Item(strTag As String) As IEnumerable(Of Emulator)
@@ -150,7 +181,106 @@ Public Class Form1
 
     End Class
     Public myKeybindings As New Dictionary(Of String, MenulatorAction)
-    Public myJoystickBindings As New Dictionary(Of Integer, List(Of MenulatorJoystickAction))
+    Public myJoystickBindings As New JoystickActionDictionary
+    Public Class JoystickActionDictionary
+        Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction))
+        Dim l() As List(Of MenulatorJoystickAction)
+        Dim indexlookup As New Dictionary(Of Integer, Integer)
+
+        Default Public Property Item(iJoystickID As Integer) As List(Of MenulatorJoystickAction) Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).Item
+            Get
+                Return l(indexlookup(iJoystickID))
+            End Get
+            Set(value As List(Of MenulatorJoystickAction))
+                l(indexlookup(iJoystickID)) = value
+            End Set
+        End Property
+
+        Public ReadOnly Property Keys As ICollection(Of Integer) Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).Keys
+            Get
+                Return indexlookup.Keys
+            End Get
+        End Property
+
+        Public ReadOnly Property Values As ICollection(Of List(Of MenulatorJoystickAction)) Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).Values
+            Get
+                Return l
+            End Get
+        End Property
+
+        Public ReadOnly Property Count As Integer Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).Count
+            Get
+                Return indexlookup.Count
+            End Get
+        End Property
+
+        Public ReadOnly Property IsReadOnly As Boolean Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).IsReadOnly
+            Get
+                Return False
+            End Get
+        End Property
+
+        Public Sub Add(key As Integer, value As List(Of MenulatorJoystickAction)) Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).Add
+            If Not indexlookup.ContainsKey(key) Then
+                If l Is Nothing Then ReDim l(0) Else ReDim Preserve l(UBound(l) + 1)
+                indexlookup.Add(key, UBound(l))
+            End If
+            l(indexlookup(key)) = value
+        End Sub
+
+        Public Sub Add(item As KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))) Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).Add
+            Throw New NotImplementedException()
+        End Sub
+
+        Public Sub Clear() Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).Clear
+            indexlookup.Clear()
+            Erase l
+            l = Nothing
+        End Sub
+
+        Public Sub CopyTo(array() As KeyValuePair(Of Integer, List(Of MenulatorJoystickAction)), arrayIndex As Integer) Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).CopyTo
+            Throw New NotImplementedException()
+        End Sub
+
+        Public Function ContainsKey(key As Integer) As Boolean Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).ContainsKey
+            Return indexlookup.ContainsKey(key)
+        End Function
+
+        Public Function Remove(key As Integer) As Boolean Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).Remove
+            If ContainsKey(key) Then
+                l(indexlookup(key)).Clear()
+                indexlookup.Remove(key)
+                Return True
+            Else
+                Return False
+            End If
+        End Function
+
+        Public Sub Remap(oldIndex As Integer, newIndex As Integer)
+            indexlookup(oldIndex) = newIndex
+        End Sub
+
+        Public Function Remove(item As KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))) As Boolean Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).Remove
+            Throw New NotImplementedException()
+        End Function
+
+        Public Function TryGetValue(key As Integer, ByRef value As List(Of MenulatorJoystickAction)) As Boolean Implements IDictionary(Of Integer, List(Of MenulatorJoystickAction)).TryGetValue
+            Throw New NotImplementedException()
+        End Function
+
+        Public Function Contains(item As KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))) As Boolean Implements ICollection(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).Contains
+            Return l.Contains(item.Value)
+        End Function
+
+        Public Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))) Implements IEnumerable(Of KeyValuePair(Of Integer, List(Of MenulatorJoystickAction))).GetEnumerator
+            Return l.GetEnumerator
+        End Function
+
+        Private Function IEnumerable_GetEnumerator() As IEnumerator Implements IEnumerable.GetEnumerator
+            Return l.GetEnumerator
+        End Function
+    End Class
+
     Dim myFavorites As New Favorites("Favorites.xml")
     Dim MyBad As New MarkedAsBad("Favorites.xml")
 
@@ -318,7 +448,6 @@ Public Class Form1
         myKeybindings.Add("End", New MenulatorAction("End", Keys.End))
 
 
-
         LoadSettings()
 
 
@@ -359,9 +488,21 @@ Public Class Form1
         subMenus(0) = CreateMainMenu()
         ReDim _subMenuIndex(0)
         pnlLeft.Controls.Add(subMenus(0))
-        pnlLeft.Visible = True
+        'pnlLeft.Visible = True
 
     End Sub
+    Private Sub Form1_Shown(sender As Object, e As EventArgs) Handles Me.Shown
+        pnlLeft.Height = Me.Height
+        pnlLeft.Visible = True
+    End Sub
+    Private Sub Form1_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
+        Try
+            If myPopup IsNot Nothing Then myPopup.Dispose()
+            If MenulatorGameMenu IsNot Nothing Then MenulatorGameMenu.Dispose()
+        Catch
+        End Try
+    End Sub
+
     Private Sub LoadSettings(Optional strPath As String = "Menulator.xml")
         Dim file As New Xml.XmlDocument()
         file.Load(strPath)
@@ -380,25 +521,22 @@ Public Class Form1
                                                                                                                         End Sub,
                                     .AltClickHandler = Sub(s As Object, result As NewUIListItem.NewUIListItemClickedEvent)
 
-                                                           With NewSubMenu()
-                                                               .Controls.AddRange(New NewUIListItem() {
+                                                           With NewSubMenu(New NewUIListItem() {
                                                     New NewUIListItem("Display Favorites", My.Resources.favorite, Sub(s2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
                                                                                                                       Dim favs() As String = Nothing
                                                                                                                       favs = myFavorites("MAME")
                                                                                                                       'If DirectCast(subMenus(SubMenuDepth).Controls(SubMenuIndex(SubMenuDepth)), NewUIListItem).Tag = "MAME" Then
                                                                                                                       ListMAME(ListMAMEDefaultClause(Function(element As XElement) As Boolean
-                                                                                                                                                             Return (From a2 In favs Where a2 = element.@<name> Take 1).Count
-                                                                                                                                                         End Function))
+                                                                                                                                                         Return (From a2 In favs Where a2 = element.@<name> Take 1).Count
+                                                                                                                                                     End Function))
                                                                                                                       'Else
                                                                                                                       ' myGamesMenu(subMenus(SubMenuDepth).Controls(SubMenuIndex(SubMenuDepth)).Tag).PerformAltClick(New NewUIListItem.NewUIListItemClickedEvent(result2))
                                                                                                                       'End If
                                                                                                                       result2.CloseMenu = True
-                                                                                                                      result2.closeallmenu = True
+                                                                                                                      result2.CloseAllMenu = True
                                                                                                                       result2.Handled = True
                                                                                                                   End Sub)
                            })
-                                                               .Visible = True
-                                                               SubMenuIndex(SubMenuDepth) = 0
                                                            End With
                                                            result.Handled = True
                                                            result.CloseMenu = False
@@ -469,33 +607,38 @@ Public Class Form1
 
         For Each x As Xml.XmlElement In file.SelectNodes("descendant::keybinding")
             For Each y As Xml.XmlNode In x.ChildNodes
-                Dim a = New MenulatorAction() With {.Name = y.Attributes("display").Value,
+                If y.Name = "action" Then
+                    Dim a = New MenulatorAction() With {.Name = y.Attributes("display").Value,
                                                                                                  .ImgTag = InferStringValue(y.Attributes("imgTag")),
                                                                                                  .KeyboardKey = (From z2 As Xml.XmlNode In y.SelectNodes("descendant::keyboard") Select [Enum].Parse(GetType(Keys), z2.Attributes("button").Value))(0),
                                                                                                                                        .closeWindow = InferBooleanValue(y.Attributes("closeWindow"), True),
                                                                                                                                        .hideWindow = InferBooleanValue(y.Attributes("hideWindow")),
                                                                                                  .Joystick = (From z2 As Xml.XmlNode In y.SelectNodes("descendant::joystick") Select New MenulatorJoystickAction() With {.Id = z2.Attributes("id").Value,
                                                                                                                                        .Button = InferStringValue(z2.Attributes("button")),
-                                                                                                                                       .Axis = InferStringValue(z2.Attributes("axis")),
+                                                                                                                                       .Axis = InferStringValue(z2.Attributes("axis"), "-1"),
                                                                                                                                        .AxisDirection = If(InferStringValue(z2.Attributes("value")) = "-", -1, 1)})
                     }
-                For Each z2 As Xml.XmlNode In y.SelectNodes("descendant::joystick")
-                    If Not myJoystickBindings.ContainsKey(z2.Attributes("id").Value) Then
-                        myJoystickBindings.Add(z2.Attributes("id").Value, New List(Of MenulatorJoystickAction))
-                    End If
-                    myJoystickBindings(z2.Attributes("id").Value).Add(New MenulatorJoystickAction() With {.Id = z2.Attributes("id").Value,
+                    For Each z2 As Xml.XmlNode In y.SelectNodes("descendant::joystick")
+                        If Not myJoystickBindings.ContainsKey(z2.Attributes("id").Value) Then
+                            myJoystickBindings.Add(z2.Attributes("id").Value, New List(Of MenulatorJoystickAction))
+                        End If
+                        myJoystickBindings(z2.Attributes("id").Value).Add(New MenulatorJoystickAction() With {.Id = z2.Attributes("id").Value,
                                                                                                                                        .Button = InferStringValue(z2.Attributes("button")),
-                                                                                                                                       .Axis = InferStringValue(z2.Attributes("axis")),
+                                                                                                                                       .Axis = InferStringValue(z2.Attributes("axis"), "-1"),
                                                                                                                                        .AxisDirection = If(InferStringValue(z2.Attributes("value")) = "-", -1, 1),
                                                                                                                                        .KeyboardKey = a.KeyboardKey})
-                Next
-                If myKeybindings.ContainsKey(a.Name) Then
-                    myKeybindings(a.Name) = a
-                Else
-                    myKeybindings.Add(a.Name, a)
+                    Next
+                    If myKeybindings.ContainsKey(a.Name) Then
+                        myKeybindings(a.Name) = a
+                    Else
+                        myKeybindings.Add(a.Name, a)
+                    End If
+                ElseIf y.Name = "remap" Then
+                    myJoystickBindings.Remap(y.Attributes("id").Value, y.Attributes("newid").Value)
                 End If
             Next
         Next
+
         file = Nothing
 
 
@@ -616,43 +759,7 @@ Public Class Form1
             End Get
         End Property
     End Class
-    'Private Function GetFavorites(strEmu As String, Optional strFavXML As String = "Favorites.xml") As List(Of String)
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectNodes("//menulator/favorites/favorite[@emulator='" & strEmu & "']")
-    '    Dim l As New List(Of String)
-    '    For Each i As Xml.XmlNode In root
-    '        l.Add(i.Attributes("name").Value)
-    '    Next
-    '    Return l
-    'End Function
-    'Private Sub AddToFavorites(strEmu As String, name As String, Optional strFavXML As String = "Favorites.xml")
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectSingleNode("/menulator/favorites[last()]")
-    '    If root Is Nothing Then root = file.SelectSingleNode("/menulator/favorites")
-    '    Dim c = file.CreateElement("favorite")
-    '    c.SetAttribute("emulator", strEmu)
-    '    c.SetAttribute("name", name)
-    '    root.AppendChild(c)
-    '    file.Save(strFavXML)
-    'End Sub
-    'Private Function IsFavorite(strEmu As String, name As String, Optional strFavXML As String = "Favorites.xml") As Boolean
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectSingleNode("//menulator/favorites/favorite[@emulator='" & strEmu & "' and @name=" & Chr(34) & name.Replace(Chr(34), "\" & Chr(34)) & Chr(34) & "]")
-    '    Return root IsNot Nothing
-    'End Function
-    'Private Sub RemoveFromFavorites(strEmu As String, name As String, Optional strFavXML As String = "Favorites.xml")
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectSingleNode("//menulator/favorites/favorite[@emulator='" & strEmu & "' and @name='" & name & "']")
-    '    If root IsNot Nothing Then
-    '        root.ParentNode.RemoveChild(root)
-    '        file.Save(strFavXML)
-    '    End If
 
-    'End Sub
     Private Class MarkedAsBad
         Dim strFavXML As String
         Dim keys As String()
@@ -761,85 +868,8 @@ Public Class Form1
             End Get
         End Property
     End Class
-    'Private Sub MarkAsBad(emu As String, name As String, Optional strFavXML As String = "Favorites.xml")
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectSingleNode("/menulator/markedasbad[last()]")
-    '    If root Is Nothing Then root = file.SelectSingleNode("/menulator/markedasbad")
-    '    Dim c = file.CreateElement("bad")
-    '    c.SetAttribute("emulator", emu)
-    '    c.SetAttribute("name", name)
-    '    root.AppendChild(c)
-    '    file.Save(strFavXML)
-    'End Sub
-    'Private Sub MarkAsNotBad(emu As String, name As String, Optional strFavXML As String = "Favorites.xml")
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectSingleNode("//menulator/markedasbad/bad[@emulator='" & emu & "' and @name='" & name & "']")
-    '    If root IsNot Nothing Then
-    '        root.ParentNode.RemoveChild(root)
-    '        file.Save(strFavXML)
-    '    End If
-    'End Sub
-    'Private Function IsMarkedAsBad(emu As String, name As String, Optional strFavXML As String = "Favorites.xml") As Boolean
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectSingleNode("//menulator/markedasbad/bad[@emulator='" & emu & "' and @name='" & name & "']")
-    '    Return root IsNot Nothing
-    'End Function
-    'Private Function GetMarkedAsBad(emu As String, Optional strFavXML As String = "Favorites.xml") As List(Of String)
-    '    Dim file As New Xml.XmlDocument()
-    '    file.Load(strFavXML)
-    '    Dim root = file.SelectNodes("//menulator/markedasbad/bad[@emulator='" & emu & "']")
-    '    Dim l As New List(Of String)
-    '    For Each i As Xml.XmlNode In root
-    '        l.Add(i.Attributes("name").Value)
-    '    Next
-    '    Return l
-    'End Function
-    'ui to the settings of each emulator
-    Private Sub ShowEmulatorSettings()
 
 
-
-        pnlLeft.Visible = False
-        myList.EnableWait = True
-        myList.Tag = "Emulator"
-
-        myList.GameList = {New Rom() With {.Description = "Multiple Arcade Machine Emulator", .ImagePath = "MAME"},
-                New Rom() With {.Description = "Nintendo Entertainment System", .ImagePath = "nes", .ClickHandler = Sub(s1 As Object, e1 As EventArgs)
-                                                                                                                        myList.GameList = {New Rom() With {.Description = "Name"}, New Rom() With {.Description = "Path"}}
-                                                                                                                        myList.Index = 0
-                                                                                                                    End Sub},
-                New Rom() With {.Description = "Super Nintendo Entertainment System", .ImagePath = "snes"},
-                New Rom() With {.Description = "Nintendo Gameboy", .ImagePath = "gbx"},
-                New Rom() With {.Description = "Nintendo Gameboy Advance", .ImagePath = "gba"},
-                New Rom() With {.Description = "Nintendo DS", .ImagePath = "DS"},
-                New Rom() With {.Description = "Nintendo 64", .ImagePath = "n64"},
-                New Rom() With {.Description = "Nintendo GameCube"},
-                New Rom() With {.Description = "Nintendo Wii"},
-                New Rom() With {.Description = "Sega Master System", .ImagePath = "sms"},
-                New Rom() With {.Description = "Sega Genesis", .ImagePath = "gen"},
-                New Rom() With {.Description = "Sega 32x", .ImagePath = "gen32"},
-                New Rom() With {.Description = "Sega CD", .ImagePath = "gencd"},
-                New Rom() With {.Description = "Sega Saturn", .ImagePath = "saturn"},
-                New Rom() With {.Description = "Sega Dreamcast", .ImagePath = "dreamcast"},
-                New Rom() With {.Description = "Sega GameGear", .ImagePath = "gg"},
-                New Rom() With {.Description = "Atari Jaguar", .ImagePath = "jag"},
-                New Rom() With {.Description = "Atari Lynx", .ImagePath = "lynx"},
-                New Rom() With {.Description = "Sony Playstation", .ImagePath = "psx"},
-                New Rom() With {.Description = "Sony Playstation 2", .ImagePath = "ps2"},
-                New Rom() With {.Description = "Sony Playstation 3", .ImagePath = "PS3"},
-                New Rom() With {.Description = "Sony PSP", .ImagePath = "PSP"}
-            }
-
-
-        myList.Index = 0
-        myList.EnableWait = False
-
-
-
-    End Sub
 
 
     Private Function InferBooleanValue(o As Object, Optional reverse As Boolean = False) As Boolean
@@ -858,9 +888,9 @@ Public Class Form1
             Return Convert.ToBoolean(o)
         End If
     End Function
-    Private Function InferStringValue(o As Object) As String
+    Private Function InferStringValue(o As Object, Optional defaultIfNothing As String = Nothing) As String
         If o Is Nothing Then
-            Return Nothing
+            Return defaultIfNothing
         ElseIf TypeOf o Is Xml.XmlAttribute Then
             Return o.value
         Else
@@ -896,8 +926,12 @@ Public Class Form1
             PerformMameVerification("No MAME roms found. Start MAME Rom Verification? This process can take 30-60 minutes depending on number of roms.")
             Exit Sub
         End If
+        myList.Reset()
         myList.GameList = myMame_XML.GetNextX(myMame_XML.Count)
-
+        myList.ClickCallback = Sub(sender As Object, e As NewUIListItem.NewUIListItemClickedEvent)
+                                   LaunchRom()
+                                   e.Handled = True
+                               End Sub
 
 
         For Each i In myFavorites("MAME")
@@ -973,6 +1007,10 @@ Public Class Form1
         myList.Tag = strTag
         myList.SetDefaultGameIcon(ScaleImage(defaultIcon, myList.IconSize.ToSize))
 
+        myList.ClickCallback = Sub(sender As Object, e As NewUIListItem.NewUIListItemClickedEvent)
+                                   LaunchRom()
+                                   e.Handled = True
+                               End Sub
         myList.AppsMenu = New List(Of NewUIListItem)
         Dim emulators = myEmulatorList(strTag)
         If emulators.Count > 1 Then
@@ -1037,12 +1075,12 @@ Public Class Form1
                                                                     Dim fav = myFavorites(strTag) ' GetFavorites(strTag)
                                                                     If fav IsNot Nothing Then
                                                                         iRom = iRom.OrderBy(Function(a)
-                                                                                            If fav.Contains(a.Name) Then
-                                                                                                a.Favorite = True
-                                                                                            End If
+                                                                                                If fav.Contains(a.Name) Then
+                                                                                                    a.Favorite = True
+                                                                                                End If
 
-                                                                                            Return a.Description
-                                                                                        End Function)
+                                                                                                Return a.Description
+                                                                                            End Function)
                                                                     End If
                                                                     'iRom = iRom.OrderBy(Of String)(Function(a) a.Description).ToList
                                                                     myList.GameList = iRom.ToList
@@ -1059,6 +1097,108 @@ Public Class Form1
         ListRom(Type.GetType("Menulator_Zero" & "." & RomClass), strTag, strPath, defaultIcon, MethodOverride, AdditionalSearch)
 
     End Sub
+    Private Class iArtist
+        Implements IRom
+        Dim strPath As String
+        Dim strName As String
+        Dim strImagePath As String
+        Dim bFav As Boolean
+        Public Property Name As String Implements IRom.Name
+            Get
+                Return strName
+            End Get
+            Set(value As String)
+                strName = value
+            End Set
+        End Property
+
+        Public Property Path As String Implements IRom.Path
+            Get
+                Return strPath
+            End Get
+            Set(value As String)
+                strPath = value
+            End Set
+        End Property
+
+        Public Property ImagePath As String Implements IRom.ImagePath
+            Get
+                Return strImagePath
+            End Get
+            Set(value As String)
+                strImagePath = value
+            End Set
+        End Property
+
+        Public Property Description As String Implements IRom.Description
+            Get
+                Return Name
+            End Get
+            Set(value As String)
+                Name = value
+            End Set
+        End Property
+
+        Public Property Favorite As Boolean Implements IRom.Favorite
+            Get
+                Return bFav
+            End Get
+            Set(value As Boolean)
+                bFav = value
+            End Set
+        End Property
+    End Class
+    Private Class iSong
+        Implements IRom
+        Dim strPath As String
+        Dim strName As String
+        Dim strImagePath As String
+        Dim bFav As Boolean
+        Public Property Name As String Implements IRom.Name
+            Get
+                Return strName
+            End Get
+            Set(value As String)
+                strName = value
+            End Set
+        End Property
+
+        Public Property Path As String Implements IRom.Path
+            Get
+                Return strPath
+            End Get
+            Set(value As String)
+                strPath = value
+            End Set
+        End Property
+
+        Public Property ImagePath As String Implements IRom.ImagePath
+            Get
+                Return strImagePath
+            End Get
+            Set(value As String)
+                strImagePath = value
+            End Set
+        End Property
+
+        Public Property Description As String Implements IRom.Description
+            Get
+                Return Name
+            End Get
+            Set(value As String)
+                Name = value
+            End Set
+        End Property
+
+        Public Property Favorite As Boolean Implements IRom.Favorite
+            Get
+                Return bFav
+            End Get
+            Set(value As Boolean)
+                bFav = value
+            End Set
+        End Property
+    End Class
 
     Private Class iFileSystemObject
         Implements IRom
@@ -1117,7 +1257,7 @@ Public Class Form1
 
     End Class
 
-    Private Async Sub ListDrive(strPath As String)
+    Private Async Sub ListDrive(strPath As String, Optional selectIndex As Integer = 0)
         pnlLeft.Visible = False
         myList.EnableWait = True
         myList.Tag = strPath
@@ -1129,12 +1269,22 @@ Public Class Form1
                            Try
                                folders = IO.Directory.GetDirectories(strPath)
                                myList.GameList = (From a In folders Select New iFileSystemObject(a)).Concat(From a In IO.Directory.GetFiles(strPath) Select New iFileSystemObject(a))
+                               myList.AppsMenu = New List(Of NewUIListItem)(New NewUIListItem() {New NewUIListItem("Open", Nothing, Sub(sender As Object, e As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                                                        Process.Start(myList.SelectedItem.Path)
+                                                                                                                                    End Sub),
+                                                                                                 New NewUIListItem("Delete", Nothing, Sub()
+
+                                                                                                                                      End Sub),
+                                                                                                 New NewUIListItem("Properties", Nothing, Sub()
+
+                                                                                                                                          End Sub)
+                                                                            })
                            Catch
                            End Try
 
                        End Sub)
 
-        myList.Index = 0
+        myList.Index = selectIndex
         myList.EnableWait = False
 
     End Sub
@@ -1142,8 +1292,9 @@ Public Class Form1
 #End Region
 
 #Region "Menus and Submenus"
-    Private Function NewSubMenu() As FlowLayoutPanelEx
+    Private Function NewSubMenu(l As IEnumerable(Of NewUIListItem)) As FlowLayoutPanelEx
         'CloseSubMenu()
+        If l Is Nothing Then Return Nothing
         SubMenuDepth += 1
         If subMenus Is Nothing Then
             ReDim subMenus(0)
@@ -1154,22 +1305,31 @@ Public Class Form1
         End If
         subMenus(UBound(subMenus)) = New FlowLayoutPanelEx
         With DirectCast(subMenus(UBound(subMenus)), FlowLayoutPanelEx)
+            .SuspendLayout()
             If SubMenuDepth > 1 Then pnlLeft.Width += 70
 
             .Left = 70 * SubMenuDepth '  70
             .Top = 0
             .Width = pnlLeft.Width - (70 * SubMenuDepth)
-            .Height = pnlLeft.Height - lblTime.Height  '1396
+            .Height = pnlLeft.Height - lblTime.Height - 10 '1396
+            For Each a In l
+                a.Width = .Width
+            Next
             .Anchor = AnchorStyles.Left Or AnchorStyles.Bottom Or AnchorStyles.Right
             .Animation = Menulator_Zero.PanelEx.AnimateWindowFlags.AW_HOR_NEGATIVE
-            .AutoScroll = True
+            '.AutoScroll = True
             .AnimateTime = 150
             .BackColor = System.Drawing.SystemColors.ControlLight
             .FlowDirection = System.Windows.Forms.FlowDirection.TopDown
             .Padding = New System.Windows.Forms.Padding(0, 0, 20, 0)
-            AddHandler .VisibleChanged, AddressOf pnlSubMenu_VisibleChanged
             .Visible = False
             .WrapContents = False
+            .Controls.AddRange(l)
+
+            .HorizontalScroll.Maximum = 0
+            .AutoScroll = False
+            .VerticalScroll.Visible = False
+            .AutoScroll = True
 
             '.Controls.AddRange((From a In myGamesMenu Select a.Value).ToArray)
 
@@ -1178,7 +1338,10 @@ Public Class Form1
             '.Visible = True
             SubMenuIndex(UBound(_subMenuIndex)) = 0
             '.Update()
-
+            AddHandler .VisibleChanged, AddressOf pnlSubMenu_VisibleChanged
+            'SubMenuIndex(SubMenuDepth) = 0
+            .ResumeLayout()
+            .Visible = True
         End With
         Return subMenus(UBound(subMenus))
     End Function
@@ -1255,446 +1418,326 @@ Public Class Form1
     Dim subMenus() As Menulator_Zero.FlowLayoutPanelEx = Nothing
     Dim _subMenuIndex() As Integer
     Dim SubMenuDepth As Integer = 0
+    Dim _subScreenIndex() As Integer
+
+    Public Class JsonHelper
+        Public Shared Function FromClass(Of T As Class)(data As T, Optional isEmptyToNull As Boolean = False, Optional jsonSettings As Newtonsoft.Json.JsonSerializerSettings = Nothing) As String
+
+            Dim response As String = String.Empty
+
+            If (Not EqualityComparer(Of T).Default.Equals(data, Activator.CreateInstance(Of T))) Then
+                response = Newtonsoft.Json.JsonConvert.SerializeObject(data, jsonSettings)
+            End If
+            Return IIf(response = "{}", "null", response)
+        End Function
+
+        Public Shared Function ToClass(Of T As Class)(data As String, Optional jsonSettings As Newtonsoft.Json.JsonSerializerSettings = Nothing) As T
+
+            Dim response = Activator.CreateInstance(Of T)
+
+            If (Not String.IsNullOrEmpty(data)) Then
+                response = IIf(jsonSettings Is Nothing, Newtonsoft.Json.JsonConvert.DeserializeObject(Of T)(data), Newtonsoft.Json.JsonConvert.DeserializeObject(Of T)(data, jsonSettings))
+            End If
+            Return response
+        End Function
+    End Class
+    Public Class MainMenuClass
+        <Newtonsoft.Json.JsonProperty("id")>
+        Public Property Id As String
+
+        <Newtonsoft.Json.JsonProperty("display")>
+        Public Property Display As String
+        <Newtonsoft.Json.JsonProperty("icon")>
+        Public Property Icon As String
+        <Newtonsoft.Json.JsonProperty("menu")>
+        Public Property Menu As MainMenuClass()
+        <Newtonsoft.Json.JsonProperty("altmenu")>
+        Public Property AltMenu As MainMenuClass()
+        Public Function GetMenuParent(target As MainMenuClass) As MainMenuClass
+            For Each a In Menu
+                If a Is target Then
+                    Return Me
+                End If
+            Next
+            Return GetMenuParent(target)
+        End Function
+
+    End Class
+
+#Region "MenuClicks"
+    Public Sub MainMenu_pnlGamesClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        NewSubMenu(myGamesMenu.Values.ToArray)
+
+        e.CloseMenu = False
+    End Sub
+
+    Public Sub MainMenu_wmpArtistClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        myList.Reset()
+        myList.SetDefaultGameIcon(ScaleImage(My.Resources.music_2_64, myList.IconSize.ToSize))
+
+        myList.ClickCallback = Sub(sender3 As Object, e3 As NewUIListItem.NewUIListItemClickedEvent)
+
+                                   Dim artist2 = myWMP.mediaCollection.getByAuthor(myList.SelectedItem.Description)
+                                   Dim col2 As New List(Of iSong)
+                                   If _subScreenIndex Is Nothing Then ReDim _subScreenIndex(0) Else ReDim Preserve _subScreenIndex(UBound(_subScreenIndex) + 1)
+                                   _subScreenIndex(UBound(_subScreenIndex)) = myList.Index
+
+                                   For i As Integer = 0 To artist2.count - 1
+                                       col2.Add(New iSong With {.Description = artist2.Item(i).name})
+                                   Next
+                                   'myList.Reset()
+                                   'myList.SetDefaultGameIcon(ScaleImage(My.Resources.music_2_64, myList.IconSize.ToSize))
+                                   myList.GameList = col2
+                                   myList.Index = 0
+                                   myList.BackCallback = Sub() MainMenu_wmpArtistClick(r, e) ' .ClickHandler
+                                   myList.ClickCallback = Sub()
+                                                              myWMP.currentPlaylist = myWMP.mediaCollection.getByName(myList.SelectedItem.Description)
+                                                              myWMP.controls.play()
+                                                          End Sub
+                                   e.CloseAllMenu = True
+                               End Sub
+
+        Dim artist = myWMP.mediaCollection.getAttributeStringCollection("Artist", "Audio")
+        Dim col As New List(Of iArtist)
+        For i As Integer = 0 To artist.count - 1
+            col.Add(New iArtist With {.Description = artist.Item(i)})
+        Next
+        myList.GameList = col
+        If _subScreenIndex IsNot Nothing Then
+            myList.Index = _subScreenIndex(UBound(_subScreenIndex))
+            If UBound(_subScreenIndex) = 0 Then Erase _subScreenIndex Else ReDim Preserve _subScreenIndex(UBound(_subScreenIndex) - 1)
+        Else
+            myList.Index = 0
+        End If
+        e.CloseAllMenu = True
+    End Sub
+    Public Sub MainMenu_wmpAlbumClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        myList.Reset()
+        myList.SetDefaultGameIcon(ScaleImage(My.Resources.music_2_64, myList.IconSize.ToSize))
+
+        Dim artist = myWMP.mediaCollection.getAttributeStringCollection("Album", "Audio")
+        Dim col As New List(Of iSong)
+        For i As Integer = 0 To artist.count - 1
+            col.Add(New iSong With {.Description = artist.Item(i)})
+        Next
+        myList.GameList = col
+        e.CloseAllMenu = True
+    End Sub
+    Public Sub MainMenu_wmpGenreClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        myList.Reset()
+        myList.SetDefaultGameIcon(ScaleImage(My.Resources.icons8_concert_day_64_white, myList.IconSize.ToSize))
+
+        Dim artist = myWMP.mediaCollection.getAttributeStringCollection("WM/Genre", "Audio")
+        Dim col As New List(Of iSong)
+        For i As Integer = 0 To artist.count - 1
+            col.Add(New iSong With {.Description = artist.Item(i)})
+        Next
+        myList.GameList = col
+        e.CloseAllMenu = True
+    End Sub
+    Public Sub MainMenu_wmpPlaylistsClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        myList.Reset()
+        myList.SetDefaultGameIcon(ScaleImage(My.Resources.music_2_64, myList.IconSize.ToSize))
+
+        Dim playlists = myWMP.playlistCollection.getAll
+        Dim col As New List(Of iSong)
+        For i As Integer = 0 To playlists.count - 1
+            col.Add(New iSong With {.Description = playlists.Item(i).name})
+        Next
+        myList.GameList = col
+        e.CloseAllMenu = True
+    End Sub
+    Public Sub MainMenu_setJoystickRemapClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        Dim file As New Xml.XmlDocument()
+        Dim strFavXml As String = "Favorites.xml"
+        file.Load(strFavXml)
+        Dim root = file.SelectNodes("/keybinding/remap")
+        If root IsNot Nothing Then
+            For Each ar As Xml.XmlNode In root
+                file.DocumentElement.Item("keybinding").RemoveChild(ar)
+            Next
+        End If
+        For j As Integer = 0 To Controllers.Count - 1
+            If frmMsg.Msgbox("Press any joystick function for Joystick Index " & j, Integer.MaxValue) = MsgBoxResult.Ok Then
+                Dim z = DirectCast(frmMsg.JoyTestOutput(1), JoyApi.Joystick.JoyStickChangedArgs)
+                myJoystickBindings.Remap(j, z.JoyID)
+
+
+
+                Dim c = file.CreateElement("remap")
+                c.SetAttribute("id", j)
+                c.SetAttribute("newid", z.JoyID)
+                file.DocumentElement.Item("keybinding").AppendChild(c)
+
+            Else
+                Exit For
+            End If
+        Next
+        file.Save(strFavXml)
+    End Sub
+
+    Public Sub MainMenu_pnlFilesClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+
+        myList.ClickCallback = Sub(sender As Object, e2 As NewUIListItem.NewUIListItemClickedEvent)
+                                   'If TypeOf myList.SelectedItem Is Rom Then
+                                   '    With DirectCast(myList.SelectedItem, Rom)
+                                   '        If .ClickHandler IsNot Nothing Then
+                                   '            InGame = True
+                                   '            .ClickHandler.Invoke(myList.SelectedItem, Nothing)
+
+
+                                   '            e2.Handled = True
+                                   '        End If
+                                   '    End With
+                                   'ElseIf TypeOf myList.SelectedItem Is iFileSystemObject Then
+                                   If _subScreenIndex Is Nothing Then ReDim _subScreenIndex(0) Else ReDim Preserve _subScreenIndex(UBound(_subScreenIndex) + 1)
+                                   _subScreenIndex(UBound(_subScreenIndex)) = myList.Index
+                                   With DirectCast(myList.SelectedItem, iFileSystemObject)
+                                       ListDrive(.Path)
+
+                                   End With
+                                   'End If
+                                   e2.Handled = True
+                               End Sub
+        myList.BackCallback = Sub(sender As Object, e2 As NewUIListItem.NewUIListItemClickedEvent)
+                                  Try
+                                      Dim si As Integer = 0
+                                      If _subScreenIndex IsNot Nothing Then
+                                          si = _subScreenIndex(UBound(_subScreenIndex))
+                                          If UBound(_subScreenIndex) = 0 Then Erase _subScreenIndex Else ReDim Preserve _subScreenIndex(UBound(_subScreenIndex) - 1)
+                                      End If
+                                      ListDrive(FileIO.FileSystem.GetParentPath(myList.Tag), si)
+                                  Catch
+                                  End Try
+                                  e2.Handled = True
+                              End Sub
+
+        Dim i As New List(Of NewUIListItem)
+        For Each drive In System.IO.DriveInfo.GetDrives()
+            Dim a As New Win32SystemIcons(drive.Name)
+            i.Add(New NewUIListItem() With {.Text = a.DisplayName, .Image = a.GetIcon(True), .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub(sender2 As Object, e2 As EventArgs)
+                                                                                                                                                                        ListDrive(drive.Name)
+                                                                                                                                                                    End Sub})
+        Next
+
+        Dim reg = My.Computer.Registry.CurrentUser.OpenSubKey("Network")
+        For Each subname In reg.GetSubKeyNames
+            Dim data = reg.OpenSubKey(subname)
+            Dim a As New Win32SystemIcons(subname & ":\")
+            i.Add(New NewUIListItem() With {.Text = a.DisplayName, .Image = a.GetIcon(True), .Dock = DockStyle.Left, .Height = 48, .Width = .Width})
+        Next
+        NewSubMenu(i.ToArray)
+        '.Visible = True
+        'SubMenuIndex(SubMenuDepth) = 0
+        e.CloseMenu = False
+    End Sub
+    Public Sub MainMenu_setEmulatorClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        pnlLeft.Visible = False
+        myList.EnableWait = True
+        myList.Tag = "Emulator"
+
+        myList.GameList = {New Rom() With {.Description = "Multiple Arcade Machine Emulator", .ImagePath = "MAME"},
+                New Rom() With {.Description = "Nintendo Entertainment System", .ImagePath = "nes", .ClickHandler = Sub(s1 As Object, e1 As EventArgs)
+                                                                                                                        myList.GameList = {New Rom() With {.Description = "Name"}, New Rom() With {.Description = "Path"}}
+                                                                                                                        myList.Index = 0
+                                                                                                                    End Sub},
+                New Rom() With {.Description = "Super Nintendo Entertainment System", .ImagePath = "snes"},
+                New Rom() With {.Description = "Nintendo Gameboy", .ImagePath = "gbx"},
+                New Rom() With {.Description = "Nintendo Gameboy Advance", .ImagePath = "gba"},
+                New Rom() With {.Description = "Nintendo DS", .ImagePath = "DS"},
+                New Rom() With {.Description = "Nintendo 64", .ImagePath = "n64"},
+                New Rom() With {.Description = "Nintendo GameCube"},
+                New Rom() With {.Description = "Nintendo Wii"},
+                New Rom() With {.Description = "Sega Master System", .ImagePath = "sms"},
+                New Rom() With {.Description = "Sega Genesis", .ImagePath = "gen"},
+                New Rom() With {.Description = "Sega 32x", .ImagePath = "gen32"},
+                New Rom() With {.Description = "Sega CD", .ImagePath = "gencd"},
+                New Rom() With {.Description = "Sega Saturn", .ImagePath = "saturn"},
+                New Rom() With {.Description = "Sega Dreamcast", .ImagePath = "dreamcast"},
+                New Rom() With {.Description = "Sega GameGear", .ImagePath = "gg"},
+                New Rom() With {.Description = "Atari Jaguar", .ImagePath = "jag"},
+                New Rom() With {.Description = "Atari Lynx", .ImagePath = "lynx"},
+                New Rom() With {.Description = "Sony Playstation", .ImagePath = "psx"},
+                New Rom() With {.Description = "Sony Playstation 2", .ImagePath = "ps2"},
+                New Rom() With {.Description = "Sony Playstation 3", .ImagePath = "PS3"},
+                New Rom() With {.Description = "Sony PSP", .ImagePath = "PSP"}
+            }
+
+
+        myList.Index = 0
+        myList.EnableWait = False
+    End Sub
+    Public Sub MainMenu_helpWebsiteClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        Process.Start("http://www.dogskullsoftware.com")
+        e.Handled = True
+    End Sub
+    Public Sub MainMenu_ApplicationRestartClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        Application.Restart()
+    End Sub
+    Public Sub MainMenu_CloseClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        Me.Close()
+    End Sub
+    Public Sub MainMenu_RestartClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        Process.Start("shutdown", "-r -f -t 00")
+    End Sub
+    Public Sub MainMenu_ShutdownClick(r As MainMenuClass, e As NewUIListItem.NewUIListItemClickedEvent)
+        Process.Start("shutdown", "-s -f -t 00")
+    End Sub
+
+#End Region
+
+    Private Function _CreateSubMenu(r As MainMenuClass) As IEnumerable(Of NewUIListItem)
+        If r Is Nothing Then Return Nothing
+        If r.Menu Is Nothing Then Return Nothing
+        Return (From m In r.Menu Select New NewUIListItem(m.Display, My.Resources.ResourceManager.GetObject(m.Icon), Sub(sender As Object, e As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                                         Dim i = Me.GetType().GetMethod("MainMenu_" & sender.tag.id & "Click")
+                                                                                                                         If i IsNot Nothing Then
+                                                                                                                             e.Handled = True
+                                                                                                                             i.Invoke(Me, {m, e})
+                                                                                                                         Else
+                                                                                                                             e.CloseAllMenu = False
+                                                                                                                             e.CloseMenu = False
+                                                                                                                             If Not CreateSubMenu(sender.tag) Then
+                                                                                                                                 e.Handled = False
+                                                                                                                             End If
+                                                                                                                         End If
+                                                                                                                     End Sub,
+                                                                                                          Sub(sender As Object, e As NewUIListItem.NewUIListItemClickedEvent)
+                                                                                                              Dim i = Me.GetType().GetMethod("MainMenu_" & sender.tag.id & "AltClick")
+                                                                                                              If i IsNot Nothing Then
+                                                                                                                  e.Handled = True
+                                                                                                                  i.Invoke(Me, {m, e})
+                                                                                                              Else
+                                                                                                                  e.CloseAllMenu = False
+                                                                                                                  e.CloseMenu = False
+                                                                                                                  If Not CreateSubMenu(sender.tag) Then
+                                                                                                                      e.Handled = False
+                                                                                                                  End If
+                                                                                                              End If
+                                                                                                          End Sub) With {.Tag = m}).ToArray
+
+
+
+    End Function
+    Private Function CreateSubMenu(r As MainMenuClass) As Boolean
+        Return NewSubMenu(_CreateSubMenu(r)) IsNot Nothing
+    End Function
 
     Private Function CreateMainMenu() As Menulator_Zero.FlowLayoutPanelEx
 
-
-        'Dim _Panel4 As New Panel
-        'With _Panel4
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_games
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel4"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label14
-        ''
-        'Dim _label14 As New Label
-        'With _label14
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label14"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Games"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        'Dim _pnlGames As New Panel
-        'With _pnlGames
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel4)
-        '    .Controls.Add(_label14)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 3)
-        '    .Name = "pnlGames"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 8
-        'End With
-        ''
-        ''Panel5
-        ''
-        'Dim _Panel5 As New Panel
-        'With _Panel5
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_audio
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel5"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label15
-        ''
-        'Dim _Label15 As New Label
-        'With _Label15
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label15"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Media"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        ''
-        ''pnlMusic
-        ''
-        'Dim _pnlMusic As New Panel
-        'With _pnlMusic
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel5)
-        '    .Controls.Add(_Label15)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 57)
-        '    .Name = "pnlMusic"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 9
-        'End With
-        ''
-        ''Panel7
-        ''
-        'Dim _Panel7 As New Panel
-        'With _Panel7
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_globe
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel7"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label16
-        ''
-        'Dim _Label16 As New Label
-        'With _Label16
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label16"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Internet"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        ''
-        ''pnlNetwork
-        ''
-        'Dim _pnlNetwork As New Panel
-        'With _pnlNetwork
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel7)
-        '    .Controls.Add(_Label16)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 111)
-        '    .Name = "pnlNetwork"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 10
-        'End With
-        ''
-        ''Panel9
-        ''
-        'Dim _Panel9 As New Panel
-        'With _Panel9
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_gotostart
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel9"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label7
-        ''
-        'Dim _Label7 As New Label
-        'With _Label7
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label7"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Application"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        ''
-        ''pnlApplication
-        ''
-        'Dim _pnlApplication As New Panel
-        'With _pnlApplication
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel9)
-        '    .Controls.Add(_Label7)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 165)
-        '    .Name = "pnlApplication"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 11
-        'End With
-        ''
-        ''Panel11
-        ''
-        'Dim _Panel11 As New Panel
-        'With _Panel11
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_folder
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel11"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label8
-        ''
-        'Dim _Label8 As New Label
-        'With _Label8
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label8"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "File Explorer"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        ''
-        ''pnlFiles
-        ''
-        'Dim _pnlFiles As New Panel
-        'With _pnlFiles
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel11)
-        '    .Controls.Add(_Label8)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 219)
-        '    .Name = "pnlFiles"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 12
-        'End With
-        ''
-        ''Panel13
-        ''
-        'Dim _Panel13 As New Panel
-        'With _Panel13
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_settings2
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel13"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label9
-        ''
-        'Dim _Label9 As New Label
-        'With _Label9
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label9"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Control Panel"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        ''
-        ''pnlSettings
-        ''
-        'Dim _pnlSettings As New Panel
-        'With _pnlSettings
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel13)
-        '    .Controls.Add(_Label9)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 273)
-        '    .Name = "pnlSettings"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 13
-        'End With
-        ''
-        ''Panel15
-        'Dim _Panel15 As New Panel
-        'With _Panel15
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.icon_wm10_help
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel15"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label10
-        ''
-        'Dim _Label10 As New Label
-        'With _Label10
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label10"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Help"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-        ''
-        ''pnlHelp
-        ''
-        'Dim _pnlHelp As New Panel
-        'With _pnlHelp
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel15)
-        '    .Controls.Add(_Label10)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 327)
-        '    .Name = "pnlHelp"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 14
-        'End With
-        ''
-        ''Panel17
-        ''
-        'Dim _Panel17 As New Panel
-        'With _Panel17
-        '    .BackgroundImage = Global.Menulator_Zero.My.Resources.Resources.notifications_powermenu_icon_standby
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        '    .Location = New System.Drawing.Point(6, 3)
-        '    .Name = "Panel17"
-        '    .Size = New System.Drawing.Size(52, 42)
-        '    .TabIndex = 2
-        'End With
-        ''
-        ''Label11
-        ''
-        'Dim _Label11 As New Label
-        'With _Label11
-        '    .ImageAlign = System.Drawing.ContentAlignment.MiddleLeft
-        '    .Location = New System.Drawing.Point(64, 0)
-        '    .Name = "Label11"
-        '    .Size = New System.Drawing.Size(222, 48)
-        '    .TabIndex = 8
-        '    .Text = "Power"
-        '    .TextAlign = System.Drawing.ContentAlignment.MiddleLeft
-        'End With
-
-        ''
-        ''pnlPower
-        ''
-        'Dim _pnlPower As New Panel
-        'With _pnlPower
-        '    .BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        '    .Controls.Add(_Panel17)
-        '    .Controls.Add(_Label11)
-        '    .Dock = System.Windows.Forms.DockStyle.Left
-        '    .Location = New System.Drawing.Point(3, 381)
-        '    .Name = "pnlPower"
-        '    .Size = New System.Drawing.Size(286, 48)
-        '    .TabIndex = 15
-        'End With
+        Dim myMainMenu = JsonHelper.ToClass(Of MainMenuClass)(My.Resources.MainMenu)
 
         Dim fp1 As New FlowLayoutPanelEx
         With fp1
-            .Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
-               Or System.Windows.Forms.AnchorStyles.Left) _
-               Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
             .AnimateTime = 150
             .AutoScroll = True
-            '.Controls.Add(_pnlGames)
-            '.Controls.Add(_pnlMusic)
-            '.Controls.Add(_pnlNetwork)
-            '.Controls.Add(_pnlApplication)
-            '.Controls.Add(_pnlFiles)
-            '.Controls.Add(_pnlSettings)
-            '.Controls.Add(_pnlHelp)
-            '.Controls.Add(_pnlPower)
-            .Controls.Add(New NewUIListItem("Games", My.Resources.icon_wm10_games, Sub(s As Object, result As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                       With NewSubMenu()
-                                                                                           For Each a In myGamesMenu.Values
-                                                                                               a.Width = .Width
-                                                                                           Next
-
-                                                                                           .HorizontalScroll.Maximum = 0
-                                                                                           .AutoScroll = False
-                                                                                           .VerticalScroll.Visible = False
-                                                                                           .AutoScroll = True
-
-                                                                                           .Controls.AddRange(myGamesMenu.Values.ToArray)
-                                                                                           SubMenuIndex(SubMenuDepth) = 0
 
 
-                                                                                           .Visible = True
-                                                                                           result.CloseMenu = False
-                                                                                       End With
-                                                                                   End Sub) With {.Name = "pnlGames"})
-            .Controls.Add(New NewUIListItem("Music", My.Resources.icon_wm10_audio, Nothing) With {.Name = "pnlMusic"})
-            .Controls.Add(New NewUIListItem("Network", My.Resources.icon_wm10_globe, Nothing) With {.Name = "pnlNetwork"})
-            .Controls.Add(New NewUIListItem("Application", My.Resources.icon_wm10_gotostart, Nothing) With {.Name = "pnlApplications"})
-            .Controls.Add(New NewUIListItem("File Explorer", My.Resources.icon_wm10_folder, Sub(s As Object, result As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                With NewSubMenu()
-                                                                                                    For Each drive In System.IO.DriveInfo.GetDrives()
-                                                                                                        Dim a As New Win32SystemIcons(drive.Name)
-                                                                                                        .Controls.Add(New NewUIListItem() With {.Text = a.DisplayName, .Image = a.GetIcon(True), .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub(sender2 As Object, e2 As EventArgs)
-                                                                                                                                                                                                                                                                            ListDrive(drive.Name)
-                                                                                                                                                                                                                                                                        End Sub})
-                                                                                                    Next
+            .Controls.AddRange(_CreateSubMenu(myMainMenu))
 
-                                                                                                    Dim reg = My.Computer.Registry.CurrentUser.OpenSubKey("Network")
-                                                                                                    For Each subname In reg.GetSubKeyNames
-                                                                                                        Dim data = reg.OpenSubKey(subname)
-                                                                                                        Dim a As New Win32SystemIcons(subname & ":\")
-                                                                                                        .Controls.Add(New NewUIListItem() With {.Text = a.DisplayName, .Image = a.GetIcon(True), .Dock = DockStyle.Left, .Height = 48, .Width = .Width})
-                                                                                                    Next
-                                                                                                    .Visible = True
-                                                                                                    SubMenuIndex(SubMenuDepth) = 0
-                                                                                                    result.CloseMenu = False
-                                                                                                End With
-                                                                                            End Sub) With {.Name = "pnlFiles"})
-            .Controls.Add(New NewUIListItem("Settings", My.Resources.icon_wm10_settings2, Sub(s As Object, result As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                              With NewSubMenu()
-                                                                                                  .Controls.Add(New NewUIListItem() With {.Text = "Emulator Settings", .Image = My.Resources.application_settings, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub(sender2 As Object, e2 As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                                                                                                                                                                                                              ShowEmulatorSettings()
-                                                                                                                                                                                                                                                                                              e2.Handled = True
-                                                                                                                                                                                                                                                                                          End Sub})
-
-                                                                                                  .Controls.Add(New NewUIListItem() With {.Text = "Joystick Remap", .Image = My.Resources.joystick, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub()
-                                                                                                                                                                                                                                                                               Dim joys(JoyApi.Joystick.JoyManager.EnumerateDevices.Count - 1) As Guid
-                                                                                                                                                                                                                                                                               For count = 0 To UBound(joys)
-                                                                                                                                                                                                                                                                                   Dim f As New frmMsg("Press any button on Joystick " & count + 1, Integer.MaxValue, "")
-                                                                                                                                                                                                                                                                                   Select Case f.ShowDialog(Me)
-
-                                                                                                                                                                                                                                                                                       Case DialogResult.OK
-                                                                                                                                                                                                                                                                                           Dim i = DirectCast(f.JoyTestOutput(0), Menulator_Zero.JoyApi.Joystick).joyIndex
-                                                                                                                                                                                                                                                                                           For Each j In JoyApi.Joystick.JoyManager.EnumerateDevices
-                                                                                                                                                                                                                                                                                               If j.Value.JoyID = i Then joys(count) = j.Value.GUID : Exit For
-                                                                                                                                                                                                                                                                                           Next
-                                                                                                                                                                                                                                                                                   End Select
-                                                                                                                                                                                                                                                                                   f.Dispose()
-                                                                                                                                                                                                                                                                               Next
-                                                                                                                                                                                                                                                                               'Computer\HKEY_USERS\S-1-5-21-3065010685-3923032649-1297513653-1001\System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\VID_045E&PID_0007\Calibration
-                                                                                                                                                                                                                                                                               'For Each subkeys In My.Computer.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\VID_045E&PID_0007\Calibration").GetSubKeyNames
-                                                                                                                                                                                                                                                                               '    Dim reg As Guid = New Guid(CType(My.Computer.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\VID_045E&PID_0007\Calibration\" & subkeys).GetValue("GUID"), Byte()))
-                                                                                                                                                                                                                                                                               '    For j As Integer = 0 To UBound(joys)
-                                                                                                                                                                                                                                                                               '        If joys(j) = reg Then
-                                                                                                                                                                                                                                                                               '            My.Computer.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\VID_045E&PID_0007\Calibration\" & subkeys).SetValue("Joystick ID", j, Microsoft.Win32.RegistryValueKind.Binary)
-                                                                                                                                                                                                                                                                               '        End If
-                                                                                                                                                                                                                                                                               '    Next
-
-                                                                                                                                                                                                                                                                               'Next
-                                                                                                                                                                                                                                                                           End Sub})
-                                                                                                  .Visible = True
-                                                                                                  SubMenuIndex(SubMenuDepth) = 0
-                                                                                                  result.CloseMenu = False
-                                                                                              End With
-                                                                                          End Sub) With {.Name = "pnlSettings"})
-            .Controls.Add(New NewUIListItem("Help", My.Resources.icon_wm10_help, Sub(s As Object, result As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                     With NewSubMenu()
-                                                                                         .Controls.Add(New NewUIListItem() With {.Text = "Website", .Image = My.Resources.icon_wm10_folder, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub(sender2 As Object, result2 As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                                                                                                                                                                                       Process.Start("http://www.dogskullsoftware.com")
-                                                                                                                                                                                                                                                                       result2.Handled = True
-                                                                                                                                                                                                                                                                   End Sub})
-                                                                                         .Visible = True
-                                                                                         SubMenuIndex(SubMenuDepth) = 0
-                                                                                         result.CloseMenu = False
-                                                                                     End With
-                                                                                 End Sub) With {.Name = "pnlHelp"})
-            .Controls.Add(New NewUIListItem("Power", My.Resources.notifications_powermenu_icon_standby, Sub(s As Object, result As NewUIListItem.NewUIListItemClickedEvent)
-                                                                                                            With NewSubMenu()
-                                                                                                                .Controls.Add(New NewUIListItem() With {.Text = "Close Menulator", .Image = My.Resources.notifications_powermenu_icon_close, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub()
-                                                                                                                                                                                                                                                                                                                        Me.Close()
-                                                                                                                                                                                                                                                                                                                        'Application.Restart()
-                                                                                                                                                                                                                                                                                                                    End Sub})
-                                                                                                                .Controls.Add(New NewUIListItem() With {.Text = "Restart Menulator", .Image = My.Resources.notifications_powermenu_icon_standby, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub()
-                                                                                                                                                                                                                                                                                                                            'Me.Close()
-                                                                                                                                                                                                                                                                                                                            Application.Restart()
-                                                                                                                                                                                                                                                                                                                        End Sub})
-                                                                                                                '.Controls.Add(New NewUIListItem() With {.Text = "Log off", .Image = My.Resources.notifications_powermenu_icon_logoff, .Dock = DockStyle.Left, .Height = 48, .Width = .Width})
-                                                                                                                '.Controls.Add(New NewUIListItem() With {.Text = "Standby", .Image = My.Resources.notifications_powermenu_icon_standby, .Dock = DockStyle.Left, .Height = 48, .Width = .Width})
-                                                                                                                .Controls.Add(New NewUIListItem() With {.Text = "Restart Computer", .Image = My.Resources.notifications_powermenu_icon_restart, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub()
-                                                                                                                                                                                                                                                                                                                           Process.Start("shutdown", "-r -f -t 00")
-                                                                                                                                                                                                                                                                                                                       End Sub})
-                                                                                                                .Controls.Add(New NewUIListItem() With {.Text = "Shutdown Computer", .Image = My.Resources.notifications_powermenu_icon_shutdown, .Dock = DockStyle.Left, .Height = 48, .Width = .Width, .ClickHandler = Sub()
-                                                                                                                                                                                                                                                                                                                             Process.Start("shutdown", "-s -f -t 00")
-                                                                                                                                                                                                                                                                                                                         End Sub})
-                                                                                                                SubMenuIndex(SubMenuDepth) = 0
-                                                                                                                .Visible = True
-                                                                                                                result.CloseMenu = False
-                                                                                                            End With
-                                                                                                        End Sub) With {.Name = "pnlPower"})
-
+            .Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+                   Or System.Windows.Forms.AnchorStyles.Left) _
+                   Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
             .FlowDirection = System.Windows.Forms.FlowDirection.TopDown
             .Font = New System.Drawing.Font("Segoe UI", 11.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
             .Location = New System.Drawing.Point(0, 100)
@@ -1721,15 +1764,17 @@ Public Class Form1
             SubMenuIndex(0) = value
         End Set
     End Property
-    Private ReadOnly Property MainMenu_Current As String
-        Get
-            Return subMenus(0).Controls(_subMenuIndex(0)).Name
-        End Get
+    'Private ReadOnly Property MainMenu_Current As String
+    '    Get
+    '        Return subMenus(0).Controls(_subMenuIndex(0)).Name
+    '    End Get
 
-    End Property
+    'End Property
 
     Private Property SubMenuIndex(index As Integer) As Integer
         Get
+            If index > UBound(subMenus) Then Return -1
+            If index < 0 Then Return -1
             Return _subMenuIndex(index)
         End Get
         Set(value As Integer)
@@ -1752,8 +1797,6 @@ Public Class Form1
         End If
     End Sub
 
-
-
     Private Sub pnlLeft_VisibleChanged(sender As Object, e As EventArgs) Handles pnlLeft.VisibleChanged
         If myList Is Nothing Then Return
         If pnlLeft.Visible Then
@@ -1768,7 +1811,7 @@ Public Class Form1
     Private Sub ProcessSubMenuKeyDown(sender As Object, e As KeyEventArgs)
         Select Case e.KeyCode
             Case myKeybindings("Action").KeyboardKey
-                Dim result As New NewUIListItem.NewUIListItemClickedEvent
+                Dim result As New NewUIListItem.NewUIListItemClickedEvent()
                 If SubMenuIndex(SubMenuDepth) >= 0 AndAlso subMenus(SubMenuDepth).Controls.Count Then DirectCast(subMenus(SubMenuDepth).Controls(SubMenuIndex(SubMenuDepth)), NewUIListItem).PerformClick(result)
                 e.Handled = result.Handled
                 'End Select
@@ -1791,7 +1834,7 @@ Public Class Form1
             '    SubMenuIndex(SubMenuDepth - 1) -= 1
             '    e.Handled = True
             Case myKeybindings("AltAction").KeyboardKey
-                Dim result As New NewUIListItem.NewUIListItemClickedEvent
+                Dim result As New NewUIListItem.NewUIListItemClickedEvent()
                 If SubMenuIndex(SubMenuDepth) >= 0 AndAlso subMenus(SubMenuDepth).Controls.Count Then DirectCast(subMenus(SubMenuDepth).Controls(SubMenuIndex(SubMenuDepth)), NewUIListItem).PerformAltClick(result)
                 e.Handled = result.Handled
                 If result.CloseMenu Then
@@ -1832,6 +1875,8 @@ Public Class Form1
                 CloseSubMenu()
                 e.Handled = True
         End Select
+
+        e.Handled = True
     End Sub
 
     'Private Sub ProcessMainMenuKeyDown(sender As Object, e As KeyEventArgs)
@@ -2050,9 +2095,16 @@ Public Class Form1
         MenulatorGameMenu.Show()
     End Sub
 
+    Protected Overrides Function ProcessDialogChar(charCode As Char) As Boolean
+        'Return MyBase.ProcessDialogChar(charCode)
+        Return False
+    End Function
+    Protected Overrides Function ProcessDialogKey(keyData As Keys) As Boolean
+        'Return MyBase.ProcessDialogKey(keyData)
+        Return False
+    End Function
 
     Private Sub me_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown ', myList.KeyDown
-        'Debug.Print(e.KeyCode.ToString)
 
         If InGame Then
             If (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
@@ -2066,6 +2118,7 @@ Public Class Form1
                 Exit Sub
             End If
         End If
+
         If pnlRight.Visible Then
             ProcessFilterKeyDown(sender, e)
             If e.Handled Then
@@ -2073,28 +2126,12 @@ Public Class Form1
                 Exit Sub
             End If
         End If
-        'ElseIf SubMenuDepth > 0 Then
-        If pnlLeft.Visible Then
-            ProcessSubMenuKeyDown(sender, e)
-            If e.Handled Then
-                e.SuppressKeyPress = True
-                Exit Sub
-            End If
-        End If
-        'ElseIf pnlLeft.Visible Then
-        '    ProcessMainMenuKeyDown(sender, e)
-        '    If e.Handled Then
-        '        e.SuppressKeyPress = True
-        '        Exit Sub
-        '    End If
-        'End If
 
+        'toasty
         Select Case e.KeyCode
-                'mylist handling
-
             Case myKeybindings("Start1").KeyboardKey
 
-                If Controllers(0).lastInfo.IsAxisMin(1, Controllers(0).DeviceCaps) Then
+                If Controllers.Count >= 0 AndAlso Controllers(0).lastInfo.IsAxisMin(1, Controllers(0).DeviceCaps) Then
                     myList.Toasty(Sub()
                                       If myList.GameList IsNot Nothing AndAlso myList.GameList.Count Then
                                           myList.Index = New Random().Next(0, myList.GameList.Count - 1)
@@ -2102,58 +2139,30 @@ Public Class Form1
                                   End Sub)
                 End If
             Case myKeybindings("Start2").KeyboardKey
-                If Controllers(1).lastInfo.IsAxisMin(1, Controllers(1).DeviceCaps) Then
+                If Controllers.Count >= 1 AndAlso Controllers(1).lastInfo.IsAxisMin(1, Controllers(1).DeviceCaps) Then
                     myList.Toasty(Sub()
                                       If myList.GameList IsNot Nothing AndAlso myList.GameList.Count Then
                                           myList.Index = New Random().Next(0, myList.GameList.Count - 1)
                                       End If
                                   End Sub)
                 End If
+            Case Keys.M
+                frmMsg.Msgbox("this is a test. But it is a very long test, not that the test long, rather, this string is very long. Note that it does not contain carriage returns!" & vbCrLf & vbCrLf & "Actually i lied" & vbCrLf & "line breaks!" & vbCrLf & vbCrLf & "!", MsgBoxStyle.AbortRetryIgnore Or MsgBoxStyle.Critical, "testing a very long string that shuld not try to wrap")
+            Case Keys.R
+                frmPopup.DoPopUp("Now Playing", "My Band" & vbCrLf & "This album" & vbCrLf & "1990", My.Resources.audio_file_64)
+        End Select
 
-            Case myKeybindings("Action").KeyboardKey ' Keys.Return
+        If pnlLeft.Visible Then
+            ProcessSubMenuKeyDown(sender, e)
+            If e.Handled Then
+                e.SuppressKeyPress = True
+                Exit Sub
+            End If
+        End If
 
-                If myList.GameList IsNot Nothing Then
-                    Select Case MainMenu_Current
-                        Case "pnlGames"
-                            If myList.InAppsMenu Then
-                                Exit Select
-                            End If
-
-                            LaunchRom()
-
-                            e.Handled = True
-
-                        Case "pnlFiles"
-                            'Case Else
-                            If TypeOf myList.SelectedItem Is Rom Then
-                                With DirectCast(myList.SelectedItem, Rom)
-                                    If .ClickHandler IsNot Nothing Then
-                                        InGame = True
-                                        .ClickHandler.Invoke(myList.SelectedItem, Nothing)
-                                        e.SuppressKeyPress = True
-
-                                        e.Handled = True
-                                    End If
-                                End With
-                            ElseIf TypeOf myList.SelectedItem Is iFileSystemObject Then
-                                With DirectCast(myList.SelectedItem, iFileSystemObject)
-                                    ListDrive(.Path)
-                                    e.SuppressKeyPress = True
-                                    e.Handled = True
-                                End With
-                            End If
-                    End Select
-                End If
+        Select Case e.KeyCode
 
 
-            Case myKeybindings("Cancel").KeyboardKey
-                If MainMenu_Current = "pnlFiles" Then
-                    Try
-                        ListDrive(FileIO.FileSystem.GetParentPath(myList.Tag))
-                    Catch
-                    End Try
-                    e.Handled = True
-                End If
             Case myKeybindings("Escape").KeyboardKey  ' Keys.Escape
 
                 If myList.InAppsMenu Then
@@ -2161,8 +2170,8 @@ Public Class Form1
                 Else
                     pnlLeft.Visible = True
                 End If
-                    'Me.Close()
-                'End If
+                        'Me.Close()
+                    'End If
             Case myKeybindings("Down").KeyboardKey  'Keys.Down
                 'If pnlRight.Visible Then
                 '    e.Handled = False
@@ -2175,7 +2184,7 @@ Public Class Form1
                     End If
                     e.Handled = True
                 End If
-                'End If
+                    'End If
             Case myKeybindings("Up").KeyboardKey
                 'If pnlRight.Visible Then
                 '    e.Handled = False
@@ -2188,14 +2197,14 @@ Public Class Form1
                     End If
                     e.Handled = True
                 End If
-                'End If
-            Case myKeybindings("Left").KeyboardKey, myKeybindings("Right").KeyboardKey
-                'If pnlLeft.Visible Then
+                    'End If
+            'Case myKeybindings("Left").KeyboardKey, myKeybindings("Right").KeyboardKey
+                    'If pnlLeft.Visible Then
 
-                '    e.Handled = True
-                'ElseIf pnlRight.Visible Then
-                '    e.Handled = True
-                'End If
+                    '    e.Handled = True
+                        'ElseIf pnlRight.Visible Then
+                        '    e.Handled = True
+                        'End If
             Case myKeybindings("TestSwitch").KeyboardKey
                 SetForegroundWindow(Me.Handle)
             Case myKeybindings("Menu").KeyboardKey
@@ -2207,9 +2216,9 @@ Public Class Form1
 
                 pnlRight.Visible = True
                 txtDescription.Focus()
-            'Case Keys.F3
-            '    myList.EnableWait = Not myList.EnableWait
-            '    e.Handled = True
+                'Case Keys.F3
+                '    myList.EnableWait = Not myList.EnableWait
+                '    e.Handled = True
             Case myKeybindings("Refresh").KeyboardKey
                 'myList.RefreshIndex(8)
                 OnResize(Nothing)
@@ -2389,6 +2398,8 @@ Public Class Form1
     'End Function
     Public Shared Function ResizeKeepAspect(CurrentDimensions As Size, maxWidth As Integer, maxHeight As Integer) As SizeF
 
+
+
         Dim newHeight As Single = CurrentDimensions.Height
         Dim newWidth As Single = CurrentDimensions.Width
         If (maxWidth > 0 AndAlso newWidth > maxWidth) Then ' WidthResize
@@ -2427,7 +2438,7 @@ Public Class Form1
 
 
                 g.DrawImage(src, New RectangleF(Math.Abs((nsize.Width / 2) - (iconsize.Width / 2)),
-                                              Math.Abs((nsize.Height / 2) - (iconsize.Height / 2)), nsize.Width, nsize.Height))
+                                                  Math.Abs((nsize.Height / 2) - (iconsize.Height / 2)), nsize.Width, nsize.Height))
             End Using
             myList.bitBucket.TryAdd(key, b2.Clone)
             myList.bitBucket.UpdateState(key, MenulatorListView.BitBucketState.Ready)
@@ -2449,7 +2460,7 @@ Public Class Form1
                         g.PixelOffsetMode = Drawing2D.PixelOffsetMode.HighQuality
                         g.SmoothingMode = Drawing2D.SmoothingMode.HighQuality
                         g.DrawImage(b, New RectangleF(Math.Abs((nsize.Width / 2) - (iconsize.Width / 2)),
-                                                      Math.Abs((nsize.Height / 2) - (iconsize.Height / 2)), nsize.Width, nsize.Height))
+                                                          Math.Abs((nsize.Height / 2) - (iconsize.Height / 2)), nsize.Width, nsize.Height))
                     End Using
                     myList.bitBucket.TryAdd(filePath, b2.Clone)
                     myList.bitBucket.UpdateState(filePath, MenulatorListView.BitBucketState.Ready)
@@ -2535,10 +2546,66 @@ Public Class Form1
                     If Not myList.bitBucket.ContainsKey(myList.GameList(i).ImagePath) Then
                         If IO.Directory.Exists(myList.GameList(i).ImagePath) OrElse IO.File.Exists(myList.GameList(i).ImagePath) Then
                             Dim img As New Win32SystemIcons(myList.GameList(i).ImagePath)
-                            myList_ScaleImageRoutine(myList.GameList(i).ImagePath, img.GetIcon(True))
+                            myList_ScaleImageRoutine(myList.GameList(i).ImagePath, img.GetIcon(True, myList.IconSize.Width, myList.IconSize.Height))
                             myList.RefreshIndex(i)
 
                         End If
+                    End If
+                ElseIf TypeOf myList.GameList(i) Is iSong Then
+                    If String.IsNullOrEmpty(myList.GameList(i).ImagePath) OrElse Not myList.bitBucket.ContainsKey(myList.GameList(i).ImagePath) Then
+                        Try
+                            Dim album As String = Nothing
+                            If Not String.IsNullOrEmpty(myList.GameList(i).Description) Then
+                                Dim playlist = myWMP.mediaCollection.getByName(myList.GameList(i).Description)
+                                For plist As Integer = 0 To playlist.count - 1
+                                    album = playlist.Item(plist).getItemInfo("Album")
+                                    If Not String.IsNullOrEmpty(album) Then
+                                        'Dim Media As WMPLib.IWMPMedia = myWMP.Player.mediaCollection.getByAttribute("Title", album).get_Item(0)
+                                        Dim imagePath As String = Path.Combine(Path.GetDirectoryName(playlist.Item(plist).sourceURL), String.Format("AlbumArt_{0}_Large.jpg", playlist.Item(plist).getItemInfo("WM/WMCollectionID")))
+                                        If (IO.File.Exists(imagePath)) Then
+                                            myList.GameList(i).ImagePath = imagePath
+                                            If Not myList.bitBucket.ContainsKey(imagePath) Then
+                                                myList_ScaleImageRoutine(imagePath, New Bitmap(imagePath))
+                                            End If
+                                            myList.RefreshIndex(i)
+                                            Exit Try
+                                        End If
+                                    End If
+                                Next
+
+                            End If
+                            If String.IsNullOrEmpty(album) Then
+                                myList.GameList(i).ImagePath = "."
+                            End If
+                        Catch ex As Exception
+                        End Try
+                    End If
+                ElseIf TypeOf myList.GameList(i) Is iArtist Then
+                    If String.IsNullOrEmpty(myList.GameList(i).ImagePath) OrElse Not myList.bitBucket.ContainsKey(myList.GameList(i).ImagePath) Then
+                        Try
+                            Dim album As String = Nothing
+                            If Not String.IsNullOrEmpty(myList.GameList(i).Description) Then
+                                Dim playlist = myWMP.mediaCollection.getByAuthor(myList.GameList(i).Description)
+                                For plist As Integer = 0 To playlist.count - 1
+                                    album = playlist.Item(plist).getItemInfo("Album")
+                                    If Not String.IsNullOrEmpty(album) Then
+                                        'Dim Media As WMPLib.IWMPMedia = myWMP.Player.mediaCollection.getByAttribute("Title", album).get_Item(0)
+                                        Dim imagePath As String = Path.Combine(Path.GetDirectoryName(playlist.Item(plist).sourceURL), String.Format("AlbumArt_{0}_Large.jpg", playlist.Item(plist).getItemInfo("WM/WMCollectionID")))
+                                        If (IO.File.Exists(imagePath)) Then
+                                            myList.GameList(i).ImagePath = imagePath
+                                            myList_ScaleImageRoutine(imagePath, New Bitmap(imagePath))
+                                            myList.RefreshIndex(i)
+                                            Exit Try
+                                        End If
+                                    End If
+                                Next
+
+                            End If
+                            If String.IsNullOrEmpty(album) Then
+                                myList.GameList(i).ImagePath = "."
+                            End If
+                        Catch ex As Exception
+                        End Try
                     End If
 
                 ElseIf i < myList.GameList.Count AndAlso myList.GameList(i).ImagePath IsNot Nothing Then
@@ -2556,61 +2623,16 @@ Public Class Form1
         End Try
     End Sub
 
-    'Private Sub worker_DoWork(sender As Object, e As DoWorkEventArgs) Handles worker.DoWork
-    '    Dim startIndex As Integer, endIndex As Integer
-    '    Dim f = Split(e.Argument, "|")
-    '    startIndex = f(0)
-    '    endIndex = f(1)
-    '    For i As Integer = startIndex To endIndex
-    '        With DirectCast(myList.GameList(i), MameGame)
-    '            If .ImagePath Is Nothing Then
-    '                Dim v = MAME.Snap.FoundSnaps(myMame.MamePath, snapdir, .Name)
-    '                If v.Count Then
-    '                    .ImagePath = v(0)
-
-    '                    ScaleImageRoutine(v(0))
-    '                    myList.RefreshIndex(i)
-
-    '                Else
-    '                    v = MAME.Snap.FoundSnapsWithWebImages(myMame.MamePath, snapdir, .Name)
-    '                    If v IsNot Nothing Then
-    '                        ' .ImagePath = v(0)
-    '                        Debug.Print(v(0))
-    '                        'UriQueue.Enqueue(v(0) & "|" & .Name & "|" & i)
-
-    '                        Dim path = System.IO.Path.Combine(snapdir(0), System.IO.Path.GetFileName(v(0)))
-    '                        If DownloadRemoteImageFile(v(0), path) Then
-    '                            ScaleImageRoutine(v(0))
-    '                            .ImagePath = path
-    '                            myList.RefreshIndex(i)
-    '                        Else
-    '                            myList.bitBucket.TryAdd(path, Nothing)
-    '                            .ImagePath = ""
-    '                        End If
-    '                    Else
-    '                        .ImagePath = ""
-    '                    End If
-    '                End If
-    '            End If
-    '        End With
-    '    Next
-
-
-    '    'Do
-    '    '    Dim t As String = Nothing
-    '    '    If Not UriQueue.TryDequeue(t) Then Exit Do
-
-    '    '    Dim s As String() = Split(t, "|")
-    '    '    Dim path = System.IO.Path.Combine(snapdir(0), System.IO.Path.GetFileName(s(0)))
-    '    '    If DownloadRemoteImageFile(s(0), path) Then
-    '    '        myList.bitBucket.TryAdd(path, Image.FromFile(path))
-    '    '    Else
-    '    '        myList.bitBucket.TryAdd(path, Nothing)
-    '    '    End If
-    '    '    myList.RefreshIndex(s(2))
-    '    'Loop
-    'End Sub
-    ' Dim WithEvents worker As New System.ComponentModel.BackgroundWorker
+    Private Shared ReadOnly Property WMPImagePath(media As WMPLib.IWMPMedia) As String
+        Get
+            Dim s = Path.Combine(Path.GetDirectoryName(media.sourceURL), String.Format("AlbumArt_{0}_Large.jpg", media.getItemInfo("WM/WMCollectionID")))
+            If IO.File.Exists(s) Then
+                Return s
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
 
     Private Shared Function DownloadRemoteImageFile(uri As String, fileName As String) As Boolean
 
@@ -2656,8 +2678,6 @@ Public Class Form1
             Return False
         End If
     End Function
-
-
 
 
 #End Region
@@ -3051,7 +3071,10 @@ Public Class Form1
         End If
     End Sub
 
+
+
     Private Sub Form1_JoyStickAxisDown(sender As Object, e As JoyApi.Joystick.JoyStickAxisEventArgs) Handles Me.JoyStickAxisDown
+
         If InGame = False OrElse (MenulatorGameMenu IsNot Nothing AndAlso MenulatorGameMenu.Visible) Then
             If needJoyId Then NeedJoyIDCallback.Invoke(sender, e) : needJoyId = False : Exit Sub
             'If sender.joyindex = 2 Then
@@ -3194,114 +3217,379 @@ Public Class Form1
             Exit Sub
 
 
-                Select Case e.buttonID
-                    Case 0
-                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.Return)
-                            e.Handled = True
-                        End If
-                    Case 1
-                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.BACK)
-                            e.Handled = True
-                        End If
-                    Case 2
-                        If sender.joyindex = 2 Then
-                            'WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.PAUSE)
-                            'e.Handled = True
-
-                            Dim data(0) As frmMenulator.INPUT
-                            data(0).type = frmMenulator.INPUT_TYPE.INPUT_KEYBOARD
-                            data(0).ki.wVk = 0
-                            data(0).ki.wScan = WindowsInput.VirtualKeyCode.PAUSE
-                            data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE
-
-                            'data(1).ki.wVk = WindowsInput.VirtualKeyCode.PAUSE
-                            'data(1).ki.dwFlags = 2
-
-                            frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
-                            Threading.Thread.Sleep(50)
-
-                            data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE Or WindowsInput.KeyboardFlag.KEYUP
-
-                            frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
-                            Threading.Thread.Sleep(50)
-                        Else
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F2)
-                            e.Handled = True
-                        End If
-                    Case 3
-                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.APPS)
-                            e.Handled = True
-                        End If
-                    Case 4
-                        If sender.joyindex = 0 Or sender.joyindex = 1 Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F5)
-                            e.Handled = True
-                        End If
-                    Case 5
-                        If sender.joyindex = 2 Then
-                            WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F12)
-                            e.Handled = True
-                        End If
-                    Case 6
-                    Case 7
-
-
-                    Case 8
-                        'If sender.joyindex = 2 Then
-                        '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
+            Select Case e.buttonID
+                Case 0
+                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.Return)
+                        e.Handled = True
+                    End If
+                Case 1
+                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.BACK)
+                        e.Handled = True
+                    End If
+                Case 2
+                    If sender.joyindex = 2 Then
+                        'WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.PAUSE)
                         'e.Handled = True
-                        'End If
-                End Select
-            ElseIf (InGame AndAlso MenulatorGameMenu IsNot Nothing AndAlso Not MenulatorGameMenu.Visible) Then
-                'see if special button is pressed
-                'If e.RawJoyInfo.IsButtonPressed(JoyApi.Joystick.NativeMethods.JoyButtons.JOY_BUTTON10) Then
-                '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
-                '    'MenulatorGameMenu.KeyHook_KeyDown(New frmMenulator.KeyboardHook.KeyEventArgsEx(Keys.Space))
-                'End If
+
+                        Dim data(0) As frmMenulator.INPUT
+                        data(0).type = frmMenulator.INPUT_TYPE.INPUT_KEYBOARD
+                        data(0).ki.wVk = 0
+                        data(0).ki.wScan = WindowsInput.VirtualKeyCode.PAUSE
+                        data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE
+
+                        'data(1).ki.wVk = WindowsInput.VirtualKeyCode.PAUSE
+                        'data(1).ki.dwFlags = 2
+
+                        frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
+                        Threading.Thread.Sleep(50)
+
+                        data(0).ki.dwFlags = WindowsInput.KeyboardFlag.SCANCODE Or WindowsInput.KeyboardFlag.KEYUP
+
+                        frmMenulator.SendInput(0, data, Marshal.SizeOf(GetType(frmMenulator.INPUT)))
+                        Threading.Thread.Sleep(50)
+                    Else
+                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F2)
+                        e.Handled = True
+                    End If
+                Case 3
+                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.APPS)
+                        e.Handled = True
+                    End If
+                Case 4
+                    If sender.joyindex = 0 Or sender.joyindex = 1 Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F5)
+                        e.Handled = True
+                    End If
+                Case 5
+                    If sender.joyindex = 2 Then
+                        WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.F12)
+                        e.Handled = True
+                    End If
+                Case 6
+                Case 7
 
 
-            End If
+                Case 8
+                    'If sender.joyindex = 2 Then
+                    '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
+                    'e.Handled = True
+                    'End If
+            End Select
+        ElseIf (InGame AndAlso MenulatorGameMenu IsNot Nothing AndAlso Not MenulatorGameMenu.Visible) Then
+            'see if special button is pressed
+            'If e.RawJoyInfo.IsButtonPressed(JoyApi.Joystick.NativeMethods.JoyButtons.JOY_BUTTON10) Then
+            '    WindowsInput.InputSimulator.SimulateKeyDown(WindowsInput.VirtualKeyCode.SPACE)
+            '    'MenulatorGameMenu.KeyHook_KeyDown(New frmMenulator.KeyboardHook.KeyEventArgsEx(Keys.Space))
+            'End If
+
+
+        End If
     End Sub
 #End Region
 
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
-        lblTime.Text = Now.ToString("h:mm tt  M/dd/yyyy")
+        lblTime.Text = Now.ToString("h:mm tt  M/d/yyyy")
+    End Sub
+    Dim myPopup As frmPopup
+    Private Sub myWMP_MediaChange(Item As WMPLib.IWMPMedia3) Handles myWMP.MediaChange
+        Me.Invoke(Sub()
+
+                      Dim s = WMPImagePath(Item)
+                      Dim i As Bitmap
+                      If String.IsNullOrEmpty(s) Then
+                          i = My.Resources.audio_file_64
+                      Else
+                          i = New Bitmap(s)
+                      End If
+                      If Not myPopup.Visible Then
+                          myPopup.DoPopUp(Item.name, Item.getItemInfo("WM/AlbumArtist") & vbCrLf & Item.getItemInfo("WM/AlbumTitle") & vbCrLf & Item.getItemInfo("WM/Year"), i)
+                      Else
+                          myPopup.Push(Item.name, Item.getItemInfo("WM/AlbumArtist") & vbCrLf & Item.getItemInfo("WM/AlbumTitle") & vbCrLf & Item.getItemInfo("WM/Year"), i)
+                      End If
+                  End Sub)
+    End Sub
+
+
+End Class
+
+Public Class ButtonEX
+    Inherits Control
+    Implements IButtonControl
+    Public Sub New()
+        MyBase.New
+
+        SetStyle(ControlStyles.SupportsTransparentBackColor Or ControlStyles.AllPaintingInWmPaint Or ControlStyles.EnableNotifyMessage Or ControlStyles.OptimizedDoubleBuffer Or ControlStyles.UserPaint, True)
+        Me.DoubleBuffered = True
+        foreBrushHot = New SolidBrush(ForeColorHot)
+        ForeBrush = New SolidBrush(ForeColor)
+        backBrush = New SolidBrush(BackColor)
+        backBrushHot = New SolidBrush(BackColorHot)
+        backBrushDefault = New SolidBrush(backColorDefault)
+        backBrushHotDefault = New SolidBrush(BackColorHotDefault)
+        foreBrushDefault = New SolidBrush(ForeColorDefault)
+    End Sub
+    Dim _backColorHot As Color = Color.Green, _foreColorHot As Color = Color.Green, _backColorHotDefault As Color = Color.Green, _backColorDefault As Color = Color.Green, _foreColorDefault As Color = Color.White
+
+    Dim foreBrushHot, ForeBrush As SolidBrush
+    Dim backBrushHot, backBrush As SolidBrush
+    Dim backBrushDefault, backBrushHotDefault As SolidBrush
+    Dim foreBrushDefault As SolidBrush
+    <Category("Appearance")>
+    Public Property BackColorHot As Color
+        Get
+            Return _backColorHot
+        End Get
+        Set(value As Color)
+            _backColorHot = value
+            backBrushHot = New SolidBrush(value)
+        End Set
+    End Property
+    <Category("Appearance")>
+    Public Property BackColorHotDefault As Color
+        Get
+            Return _backColorHotDefault
+        End Get
+        Set(value As Color)
+            _backColorHotDefault = value
+            backBrushHotDefault = New SolidBrush(value)
+        End Set
+    End Property
+    <Category("Appearance")>
+    Public Property ForeColorHot As Color
+        Get
+            Return _foreColorHot
+        End Get
+        Set(value As Color)
+            _foreColorHot = value
+            foreBrushHot = New SolidBrush(value)
+        End Set
+    End Property
+    Public Overrides Property ForeColor As Color
+        Get
+            Return MyBase.ForeColor
+        End Get
+        Set(value As Color)
+            MyBase.ForeColor = value
+            ForeBrush = New SolidBrush(value)
+        End Set
+    End Property
+    <Category("Appearance")>
+    Public Property ForeColorDefault As Color
+        Get
+            Return _foreColorDefault
+        End Get
+        Set(value As Color)
+            _foreColorDefault = value
+            foreBrushDefault = New SolidBrush(value)
+        End Set
+    End Property
+    Public Overrides Property BackColor As Color
+        Get
+            If TurnOffRender Then
+                Return Color.Transparent
+            Else
+                Return MyBase.BackColor
+            End If
+        End Get
+        Set(value As Color)
+            MyBase.BackColor = value
+            backBrush = New SolidBrush(value)
+        End Set
+    End Property
+    <Category("Appearance")>
+    Public Property BackColorDefault As Color
+        Get
+            If TurnOffRender Then
+                Return Color.Transparent
+            Else
+                Return _backColorDefault
+            End If
+        End Get
+        Set(value As Color)
+            _backColorDefault = value
+            backBrushDefault = New SolidBrush(value)
+        End Set
+    End Property
+
+    <Browsable(False)>
+    Public ReadOnly Property IsHot As Boolean
+        Get
+            If Not Me.DesignMode Then Return Parent.FindForm.ActiveControl Is Me
+            Return False
+        End Get
+    End Property
+    <Browsable(False)> Public Property IsDefault As Boolean
+
+    Dim _dialogResult As DialogResult
+    <Browsable(False)>
+    Public Property DialogResult As DialogResult Implements IButtonControl.DialogResult
+        Get
+            Return _dialogResult
+        End Get
+        Set(value As DialogResult)
+            _dialogResult = value
+        End Set
+    End Property
+
+
+    Dim sf As New StringFormat With {.Alignment = StringAlignment.Center, .LineAlignment = StringAlignment.Center, .FormatFlags = StringFormatFlags.FitBlackBox Or StringFormatFlags.NoWrap}
+
+    Public Property TurnOffRender As Boolean = False
+
+    Protected Overrides Sub OnPaintBackground(pevent As PaintEventArgs)
+        'If TurnOffRender Then Return
+        MyBase.OnPaintBackground(pevent)
+    End Sub
+    Protected Overrides Sub OnPaint(e As PaintEventArgs)
+        'MyBase.OnPaint(e)
+        If TurnOffRender Then Return
+        DoPaint(e)
+    End Sub
+    Protected Friend Sub DoPaint(e As PaintEventArgs)
+        Dim r = New RectangleF(Point.Empty, Me.Size)
+        If Me.IsHot Then
+            'e.Graphics.Clear(Color.Black)
+            e.Graphics.FillRectangle(backBrushHot, r)
+            e.Graphics.DrawString(Me.Text, Me.Font, foreBrushHot, r, sf)
+        Else
+            'e.Graphics.Clear(BackColor)
+            IsDefault = Parent.FindForm.AcceptButton Is Me
+            If IsDefault Then
+                e.Graphics.FillRectangle(backBrushdefault, r)
+                e.Graphics.DrawString(Me.Text, Me.Font, ForeBrushDefault, r, sf)
+            Else
+                e.Graphics.FillRectangle(backBrush, r)
+                e.Graphics.DrawString(Me.Text, Me.Font, ForeBrush, r, sf)
+            End If
+        End If
+    End Sub
+
+    Public Sub NotifyDefault(value As Boolean) Implements IButtonControl.NotifyDefault
+        IsDefault = value
+        Invalidate()
+    End Sub
+
+    Protected Overrides Sub OnClick(e As EventArgs)
+        MyBase.OnClick(e)
+    End Sub
+    Public Sub PerformClick() Implements IButtonControl.PerformClick
+        OnClick(Nothing)
     End Sub
 
 
 
 
-
-
-
-    '<DllImport("User32.dll")>
-    'Private Shared Function RegisterRawInputDevices(ByRef pRawInputDevices As RAWINPUTDEVICE, uiNumDevices As Integer, cbSize As Integer) As Boolean
-
-
-    'End Function
-    'Private Structure RAWINPUTDEVICE
-    '    Dim usUsagePage As UShort
-    '    Dim usUsage As UShort
-    '    Dim dwFlags As Integer
-    '    Dim hwndTarget As IntPtr
-    'End Structure
-    'Protected Overrides Sub DefWndProc(ByRef m As Message)
-    '        Const WM_INPUT As Integer = &HF
-    '        Select Case m.Msg
-    '            Case WM_INPUT
-    '                Debug.Print(m.WParam)
-    '        End Select
-    '        MyBase.DefWndProc(m)
-    '    End Sub
 End Class
+Public Class LabelEX
+    Inherits Control
+    Public Sub New()
+        MyBase.New
+
+        SetStyle(ControlStyles.SupportsTransparentBackColor Or ControlStyles.AllPaintingInWmPaint Or ControlStyles.CacheText Or ControlStyles.OptimizedDoubleBuffer Or ControlStyles.ResizeRedraw, True)
+        SetStyle(ControlStyles.Selectable, False)
+        Me.DoubleBuffered = True
+        _foreBrush = New SolidBrush(Color.Black)
+        _backBrush = New SolidBrush(Color.Transparent)
+
+    End Sub
+    Public Property TurnOffRender As Boolean = False
+    Protected Overrides Sub OnPaint(e As PaintEventArgs)
+        'MyBase.OnPaint(e)
+        If TurnOffRender Then Return
+        DoPaint(e)
+    End Sub
+    Dim _foreBrush As SolidBrush, _backBrush As SolidBrush
+    Public Overrides Property ForeColor As Color
+        Get
+            Return MyBase.ForeColor
+        End Get
+        Set(value As Color)
+            MyBase.ForeColor = value
+            _foreBrush = New SolidBrush(value)
+            Invalidate()
+        End Set
+    End Property
+    Public Overrides Property BackColor As Color
+        Get
+            Return MyBase.BackColor
+        End Get
+        Set(value As Color)
+            MyBase.BackColor = value
+            _backBrush = New SolidBrush(value)
+            Invalidate()
+        End Set
+    End Property
+    Dim sf As New StringFormat With {.Alignment = StringAlignment.Near, .LineAlignment = StringAlignment.Near}
+    Public Property Alignment As StringAlignment
+        Get
+            Return sf.Alignment
+        End Get
+        Set(value As StringAlignment)
+            sf.Alignment = value
+            Invalidate()
+        End Set
+    End Property
+    Public Property LineAlignment As StringAlignment
+        Get
+            Return sf.LineAlignment
+        End Get
+        Set(value As StringAlignment)
+            sf.LineAlignment = value
+            Invalidate()
+        End Set
+    End Property
+    Public Property FormatFlags As StringFormatFlags
+        Get
+            Return sf.FormatFlags
+        End Get
+        Set(value As StringFormatFlags)
+            sf.FormatFlags = value
+            Invalidate()
+        End Set
+    End Property
+    Public Property HotkeyPrefix As Text.HotkeyPrefix
+        Get
+            Return sf.HotkeyPrefix
+        End Get
+        Set(value As Text.HotkeyPrefix)
+            sf.HotkeyPrefix = value
+            Invalidate()
+        End Set
+    End Property
+    Public Property Trimming As StringTrimming
+        Get
+            Return sf.Trimming
+        End Get
+        Set(value As StringTrimming)
+            sf.Trimming = value
+            Invalidate()
+        End Set
+    End Property
+
+    Protected Friend Sub DoPaint(e As PaintEventArgs)
+        If Me.BackColor <> Color.Transparent Then
+            e.Graphics.FillRectangle(_backBrush, Me.DisplayRectangle)
+        End If
+        e.Graphics.DrawString(Text, Me.Font, _foreBrush, New Rectangle(Point.Empty, Size), sf)
+    End Sub
+    Protected Overrides Sub OnTextChanged(e As EventArgs)
+        MyBase.OnTextChanged(e)
+        Invalidate()
+    End Sub
+    Protected Overrides Sub OnFontChanged(e As EventArgs)
+        MyBase.OnFontChanged(e)
+        Invalidate()
+    End Sub
+    'Protected Overrides Sub OnSizeChanged(e As EventArgs)
+    '    MyBase.OnSizeChanged(e)
+    '    Invalidate()
+    'End Sub
 
 
-
-
-
+End Class
 
 Public Class PanelEx
     Inherits Panel
@@ -3756,9 +4044,10 @@ Public Class WindowExtension
     Public Sub EnableBlur()
         EnableBlur(Me)
     End Sub
+    Protected Shared Property AccentState As eAccentState = eAccentState.ACCENT_ENABLE_BLURBEHIND
     Public Shared Sub EnableBlur(this As Form)
         Dim accent As New AccentPolicy
-        accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND
+        accent.AccentState = AccentState
         Dim accentStructSize = Marshal.SizeOf(accent)
         Dim accentPtr = Marshal.AllocHGlobal(accentStructSize)
         Marshal.StructureToPtr(accent, accentPtr, False)
@@ -3771,7 +4060,7 @@ Public Class WindowExtension
     End Sub
 
 
-    Private Enum AccentState
+    Public Enum eAccentState
         ACCENT_DISABLED = 0
         ACCENT_ENABLE_GRADIENT = 1
         ACCENT_ENABLE_TRANSPARENTGRADIENT = 2
@@ -3781,7 +4070,7 @@ Public Class WindowExtension
     End Enum
 
     Private Structure AccentPolicy
-        Public AccentState As AccentState
+        Public AccentState As eAccentState
         Public AccentFlags As Integer
         Public GradientColor As Integer
         Public AnimationId As Integer
@@ -3796,5 +4085,463 @@ Public Class WindowExtension
     Private Enum WindowCompositionAttribute
         WCA_ACCENT_POLICY = 19
     End Enum
-End Class
 
+
+
+    '  Public Class AcrylicCompositor
+    '      Const DWM_TNP_FREEZE = &H100000
+    '      Const DWM_TNP_ENABLE3D = &H4000000
+    '      Const DWM_TNP_DISABLE3D = &H8000000
+    '      Const DWM_TNP_FORCECVI = &H40000000
+    '      Const DWM_TNP_DISABLEFORCECVI = &H80000000
+
+    '      Public Enum BackdropSource
+    '          BACKDROP_SOURCE_DESKTOP = 0
+    '          BACKDROP_SOURCE_HOSTBACKDROP = 1
+    '      End Enum
+
+    '      Public Structure AcrylicEffectParameter
+    '          Dim blurAmount As Single
+    '          Dim saturationAmount As Single
+    '          Dim tintColor As D2D1_COLOR_F
+    '          Dim fallbackColor As D2D1_COLOR_F
+    '      End Structure
+
+
+
+    '      Private Enum WINDOWCOMPOSITIONATTRIB
+
+    '          WCA_UNDEFINED = &H0
+    '          WCA_NCRENDERING_ENABLED = &H1
+    '          WCA_NCRENDERING_POLICY = &H2
+    '          WCA_TRANSITIONS_FORCEDISABLED = &H3
+    '          WCA_ALLOW_NCPAINT = &H4
+    '          WCA_CAPTION_BUTTON_BOUNDS = &H5
+    '          WCA_NONCLIENT_RTL_LAYOUT = &H6
+    '          WCA_FORCE_ICONIC_REPRESENTATION = &H7
+    '          WCA_EXTENDED_FRAME_BOUNDS = &H8
+    '          WCA_HAS_ICONIC_BITMAP = &H9
+    '          WCA_THEME_ATTRIBUTES = &HA
+    '          WCA_NCRENDERING_EXILED = &HB
+    '          WCA_NCADORNMENTINFO = &HC
+    '          WCA_EXCLUDED_FROM_LIVEPREVIEW = &HD
+    '          WCA_VIDEO_OVERLAY_ACTIVE = &HE
+    '          WCA_FORCE_ACTIVEWINDOW_APPEARANCE = &HF
+    '          WCA_DISALLOW_PEEK = &H10
+    '          WCA_CLOAK = &H11
+    '          WCA_CLOAKED = &H12
+    '          WCA_ACCENT_POLICY = &H13
+    '          WCA_FREEZE_REPRESENTATION = &H14
+    '          WCA_EVER_UNCLOAKED = &H15
+    '          WCA_VISUAL_OWNER = &H16
+    '          WCA_HOLOGRAPHIC = &H17
+    '          WCA_EXCLUDED_FROM_DDA = &H18
+    '          WCA_PASSIVEUPDATEMODE = &H19
+    '          WCA_LAST = &H1A
+    '      End Enum
+
+    '      Private Structure WINDOWCOMPOSITIONATTRIBDATA
+    '          Dim Attrib As WINDOWCOMPOSITIONATTRIB
+    '          Dim pvData As Object
+    '          Dim cbData As Integer
+    '      End Structure
+
+    '      Dim d2Device As ComPtr<ID2D1Device1> 
+    'Dim d3d11Device As ComPtr<ID3D11Device> 
+    'Dim dxgiDevice As ComPtr<IDXGIDevice2> 
+    'Dim dxgiFactory As ComPtr<IDXGIFactory2> 
+    'Dim d2dFactory2 As ComPtr<ID2D1Factory2> 
+    'Dim deviceContext As ComPtr<ID2D1DeviceContext>
+    'Dim dcompDevice As ComPtr<IDCompositionDesktopDevice> 
+    'Dim dcompDevice3 As ComPtr<IDCompositionDevice3> 
+    'Dim dcompTarget As ComPtr<IDCompositionTarget> 
+
+    'Dim rootVisual As sComPtr<IDCompositionVisual2> 
+    'Dim fallbackVisual As ComPtr<IDCompositionVisual2> 
+    'Dim desktopWindowVisual As ComPtr<IDCompositionVisual2>
+    'Dim topLevelWindowVisual As ComPtr<IDCompositionVisual2> 
+
+
+    'Dim blurEffect As ComPtr<IDCompositionGaussianBlurEffect> 
+    'Dim saturationEffect As ComPtr<IDCompositionSaturationEffect> 
+    'Dim translateTransform As ComPtr<IDCompositionTranslateTransform> 
+    'Dim clip As ComPtr<IDCompositionRectangleClip> 
+
+
+    'Dim description As New DXGI_SWAP_CHAIN_DESC1
+    '      Dim properties As New D2D1_BITMAP_PROPERTIES1
+    '      Dim swapChain As ComPtr<IDXGISwapChain1> 
+    'Dim fallbackSurface As ComPtr<IDXGISurface2>
+    '      Dim fallbackBitmap As ComPtr<ID2D1Bitmap1>
+    'Dim fallbackBrush As ComPtr<ID2D1SolidColorBrush> 
+    'Dim tintColor As D2D1_COLOR_F = D2D1 :       ColorF(0.0f, 0.0f, 0.0f, .70f)
+    'Dim fallbackColor As D2D1_COLOR_F = D2D1 :      ColorF(1.0f,1.0f,1.0f,1.0f)
+    'Dim fallbackRect As RectangleF = New RectangleF(0, 0, CSng(GetSystemMetrics(SM_CXSCREEN)), CSng(GetSystemMetrics(SM_CYSCREEN)))
+
+
+    '      Dim desktopWindow As IntPtr
+    '      Dim desktopWindowRect As Rectangle
+    '      Dim thumbnailSize As New Size
+    '      Dim thumbnail As DWM_THUMBNAIL_PROPERTIES
+    '      Dim desktopThumbnail As IntPtr = Nothing
+
+
+
+    '      Private ReadOnly Property sourceRect As Rectangle
+    '          Get
+    '              Return New Rectangle(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN))
+    '          End Get
+    '      End Property
+    '      Private ReadOnly Property destinationSize As Size
+    '          Get
+    '              Return New Drawing.Size(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN))
+    '          End Get
+    '      End Property
+    '      Dim topLevelWindowThumbnail As IntPtr = Nothing
+    '      Dim hwndExclusionList As IntPtr
+
+
+    '      'typedef NTSTATUS(WINAPI * RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+    '      'typedef BOOL(WINAPI * SetWindowCompositionAttribute())(In HWND hwnd,In WINDOWCOMPOSITIONATTRIBDATA* pwcad);
+    '      'typedef HRESULT(WINAPI * DwmpCreateSharedThumbnailVisual)(IN HWND hwndDestination,IN HWND hwndSource,IN DWORD dwThumbnailFlags,IN DWM_THUMBNAIL_PROPERTIES* pThumbnailProperties,IN VOID* pDCompDevice,OUT VOID** ppVisual, OUT PHTHUMBNAIL phThumbnailId);
+    '      'typedef HRESULT(WINAPI * DwmpCreateSharedMultiWindowVisual)(IN HWND hwndDestination,IN VOID* pDCompDevice,OUT VOID** ppVisual, OUT PHTHUMBNAIL phThumbnailId);
+    '      'typedef HRESULT(WINAPI * DwmpUpdateSharedMultiWindowVisual)(IN HTHUMBNAIL hThumbnailId,IN HWND* phwndsInclude,IN DWORD chwndsInclude,IN HWND* phwndsExclude,IN DWORD chwndsExclude,OUT RECT* prcSource, OUT SIZE* pDestinationSize,In DWORD dwFlags);
+    '      'typedef HRESULT(WINAPI * DwmpCreateSharedVirtualDesktopVisual)(IN HWND hwndDestination,IN VOID* pDCompDevice,OUT VOID** ppVisual, OUT PHTHUMBNAIL phThumbnailId);
+    '      'typedef HRESULT(WINAPI * DwmpUpdateSharedVirtualDesktopVisual)(IN HTHUMBNAIL hThumbnailId,IN HWND* phwndsInclude,IN DWORD chwndsInclude,IN HWND* phwndsExclude,IN DWORD chwndsExclude,OUT RECT* prcSource, OUT SIZE* pDestinationSize);
+
+    '      Dim DwmpCreateSharedThumbnailVisual As DwmCreateSharedThumbnailVisual
+    '      Dim DwmpCreateSharedMultiWindowVisual As DwmCreateSharedMultiWindowVisual
+    '      Dim DwmpUpdateSharedMultiWindowVisual As DwmUpdateSharedMultiWindowVisual
+    '      Dim DwmpCreateSharedVirtualDesktopVisual As DwmCreateSharedVirtualDesktopVisual
+    '      Dim DwmpUpdateSharedVirtualDesktopVisual As DwmUpdateSharedVirtualDesktopVisual
+    '      Dim SetWindowCompositionAttribute As DwmSetWindowCompositionAttribute
+    '      Dim GetVersionInfo As RtlGetVersionPtr
+
+
+    '      Dim hr As IntPtr
+    '      Dim hostWindowRect As New Rectangle
+    '      Sub New(hwnd As IntPtr)
+    '          InitLibs()
+    '          CreateCompositionDevice()
+    '          CreateEffectGraph(dcompDevice3)
+    '      End Sub
+
+    '      Function SetAcrylicEffect(hwnd As IntPtr, source As BackdropSource, params As AcrylicEffectParameter) As Boolean
+
+    '          fallbackColor = params.fallbackColor
+    '          tintColor = params.tintColor
+    '          If (source = BACKDROP_SOURCE_HOSTBACKDROP) Then
+    '              Dim enable As Boolean = True
+    '              Dim CompositionAttribute As WINDOWCOMPOSITIONATTRIBDATA
+    '              CompositionAttribute.Attrib = WCA_EXCLUDED_FROM_LIVEPREVIEW
+    '              CompositionAttribute.pvData = enable
+    '              CompositionAttribute.cbData = Marshal.SizeOf(Of Boolean)
+    '              DwmSetWindowCompositionAttribute(hwnd, CompositionAttribute)
+    '          End If
+
+    '          CreateBackdrop(hwnd, source)
+    '          CreateCompositionVisual(hwnd)
+    '          CreateFallbackVisual()
+    '          fallbackVisual.SetContent(swapChain.Get())
+    '          rootVisual.RemoveAllVisuals()
+    '          Select Case source
+
+    '              Case BACKDROP_SOURCE_DESKTOP
+    '                  rootVisual.AddVisual(desktopWindowVisual.Get(), False, Nothing)
+    '                  rootVisual.AddVisual(fallbackVisual.Get(), True, desktopWindowVisual.Get())
+
+    '              Case BACKDROP_SOURCE_HOSTBACKDROP
+    '                  rootVisual.AddVisual(desktopWindowVisual.Get(), False, Nothing)
+    '                  rootVisual.AddVisual(topLevelWindowVisual.Get(), True, desktopWindowVisual.Get())
+    '                  rootVisual.AddVisual(fallbackVisual.Get(), True, topLevelWindowVisual.Get())
+
+    '              Case Else
+    '                  rootVisual.RemoveAllVisuals()
+    '          End Select
+
+
+    '          rootVisual.SetClip(clip.Get())
+    '          rootVisual.SetTransform(translateTransform.Get())
+
+    '          saturationEffect.SetSaturation(params.saturationAmount)
+
+    '          blurEffect.SetBorderMode(D2D1_BORDER_MODE_HARD)
+    '          blurEffect.SetInput(0, saturationEffect.Get(), 0)
+    '          blurEffect.SetStandardDeviation(params.blurAmount)
+
+    '          rootVisual.SetEffect(blurEffect.Get())
+    '          Commit()
+
+    '          SyncCoordinates(hwnd)
+
+    '          Return True
+    '      End Function
+
+    '      Function GetBuildVersion() As Long
+
+    '          If (GetVersionInfo <> Nothing) Then
+
+    '              Dim versionInfo As New RTL_OSVERSIONINFOW
+    '              versionInfo.dwOSVersionInfoSize = Marshal.SizeOf(versionInfo)
+    '              If (GetVersionInfo(versionInfo) = &H0) Then
+
+    '                  Return versionInfo.dwBuildNumber
+    '              End If
+    '          End If
+    '          Return 0
+    '      End Function
+
+    '      Function InitLibs() As Boolean
+
+    '          Dim dwmapi = LoadLibrary("dwmapi.dll")
+    '          Dim user32 = LoadLibrary("user32.dll")
+    '          Dim ntdll = GetModuleHandleW("ntdll.dll")
+
+    '          If (Not dwmapi OrElse Not user32 OrElse Not ntdll) Then
+    '              Return False
+    '          End If
+
+    '          GetVersionInfo = DirectCast(GetProcAddress(ntdll, "RtlGetVersion"), RtlGetVersionPtr)
+    '          DwmSetWindowCompositionAttribute = DirectCast(GetProcAddress(user32, "SetWindowCompositionAttribute"), SetWindowCompositionAttribute)
+    '          DwmCreateSharedThumbnailVisual = DirectCast(GetProcAddress(dwmapi, MAKEINTRESOURCEA(147)), DwmpCreateSharedThumbnailVisual)
+    '          DwmCreateSharedMultiWindowVisual = DirectCast(GetProcAddress(dwmapi, MAKEINTRESOURCEA(163)), DwmpCreateSharedMultiWindowVisual)
+    '          DwmUpdateSharedMultiWindowVisual = DirectCast(GetProcAddress(dwmapi, MAKEINTRESOURCEA(164)), DwmpUpdateSharedMultiWindowVisual)
+    '          DwmCreateSharedVirtualDesktopVisual = DirectCast(GetProcAddress(dwmapi, MAKEINTRESOURCEA(163)), DwmpCreateSharedVirtualDesktopVisual)
+    '          DwmUpdateSharedVirtualDesktopVisual = DirectCast(GetProcAddress(dwmapi, MAKEINTRESOURCEA(164)), DwmpUpdateSharedVirtualDesktopVisual)
+
+    '          Return True
+    '      End Function
+
+    '      Function CreateCompositionDevice() As Boolean
+
+    '          If (D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, Nothing, D3D11_CREATE_DEVICE_BGRA_SUPPORT, Nothing, 0, D3D11_SDK_VERSION, d3d11Device.GetAddressOf(), IntPtr.Zero, IntPtr.Zero) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          If (d3d11Device.QueryInterface(dxgiDevice.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          If (D2D1CreateFactory(D2D1_FACTORY_TYPE: D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory2), (Void **)d2dFactory2.GetAddressOf()) <> S_OK)
+    'Return False
+    '          End If
+
+    '          If (d2dFactory2.CreateDevice(dxgiDevice.Get(), d2Device.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          If (DCompositionCreateDevice3(dxgiDevice.Get(), __uuidof(dcompDevice), (Void **)dcompDevice.GetAddressOf()) <> S_OKThen Then)
+    '	Return False
+    '          End If
+
+    '          If (dcompDevice.QueryInterface(__uuidof(IDCompositionDevice3), (LPVOID *) & dcompDevice3) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          Return True
+    '      End Function
+
+    '      Function CreateFallbackVisual() As Boolean
+
+    '          description.Format = DXGI_FORMAT_B8G8R8A8_UNORM
+    '          description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT
+    '          description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
+    '          description.BufferCount = 2
+    '          description.SampleDesc.Count = 1
+    '          description.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED
+
+    '          description.Width = GetSystemMetrics(SM_CXSCREEN)
+    '          description.Height = GetSystemMetrics(SM_CYSCREEN)
+
+    '          d3d11Device.As(dxgiDevice)
+
+    '          If (CreateDXGIFactory2(0, __uuidof(dxgiFactory), reinterpret_cast < Void **> (dxgiFactory.GetAddressOf())) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          If (dxgiFactory.CreateSwapChainForComposition(dxgiDevice.Get(), description, IntPtr.Zero, swapChain.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          If (d2Device.CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, deviceContext.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          If (swapChain.GetBuffer(0, __uuidof(fallbackSurface), reinterpret_cast < Void **> (fallbackSurface.GetAddressOf())) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          properties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED
+    '          properties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM
+    '          properties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET Or D2D1_BITMAP_OPTIONS_CANNOT_DRAW
+    '          If (deviceContext.CreateBitmapFromDxgiSurface(fallbackSurface.Get(), properties, fallbackBitmap.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          deviceContext.SetTarget(fallbackBitmap.Get())
+    '          deviceContext.BeginDraw()
+    '          deviceContext.Clear()
+    '          deviceContext.CreateSolidColorBrush(tintColor, fallbackBrush.GetAddressOf())
+    '          deviceContext.FillRectangle(fallbackRect, fallbackBrush.Get())
+    '          deviceContext.EndDraw()
+
+    '          If (swapChain.Present(1, 0) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          Return True
+    '      End Function
+
+    '      Function CreateCompositionVisual(hwnd As IntPtr)
+    '          dcompDevice3.CreateVisual(rootVisual)
+    '          dcompDevice3.CreateVisual(fallbackVisual)
+
+    '          If (Not CreateCompositionTarget(hwnd)) Then
+    '              Return False
+    '          End If
+
+    '          If (dcompTarget.SetRoot(rootVisual.Get()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          Return True
+    '      End Function
+
+    '      Function CreateCompositionTarget(hwnd As IntPtr) As Boolean
+    '          If (dcompDevice.CreateTargetForHwnd(hwnd, False, dcompTarget.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+
+    '          Return True
+    '      End Function
+
+    '      Function CreateBackdrop(hwnd As IntPtr, source As BackdropSource) As Boolean
+    '          Select Case source
+
+    '              Case BACKDROP_SOURCE_DESKTOP
+    '                  desktopWindow = FindWindow("Progman", Nothing)
+
+    '                  GetWindowRect(desktopWindow, desktopWindowRect)
+    '                  thumbnailSize.cx = (desktopWindowRect.Right - desktopWindowRect.Left)
+    '                  thumbnailSize.cy = (desktopWindowRect.Bottom - desktopWindowRect.Top)
+
+    '                  thumbnail.dwFlags = DWM_TNP_SOURCECLIENTAREAONLY Or DWM_TNP_VISIBLE Or DWM_TNP_RECTDESTINATION Or DWM_TNP_RECTSOURCE Or DWM_TNP_OPACITY Or DWM_TNP_ENABLE3D
+    '                  thumbnail.opacity = 255
+    '                  thumbnail.fVisible = True
+    '                  thumbnail.fSourceClientAreaOnly = False
+    '                  thumbnail.rcDestination = New Rectangle(0, 0, thumbnailSize.cx, thumbnailSize.cy)
+    '                  thumbnail.rcSource = New Rectangle(0, 0, thumbnailSize.cx, thumbnailSize.cy)
+    '                  If (DwmCreateSharedThumbnailVisual(hwnd, desktopWindow, 2, thumbnail, dcompDevice.Get(), (Void **)desktopWindowVisual.GetAddressOf(), desktopThumbnail) <> S_OK) Then
+    '                      Return False
+    '                  End If
+
+    '              Case BACKDROP_SOURCE_HOSTBACKDROP
+    '                  If (GetBuildVersion() >= 20000) Then
+    '                      hr = DwmCreateSharedMultiWindowVisual(hwnd, dcompDevice.Get(), (Void **)topLevelWindowVisual.GetAddressOf(), &topLevelWindowThumbnail)
+    '				Else
+    '                      hr = DwmCreateSharedVirtualDesktopVisual(hwnd, dcompDevice.Get(), (Void **)topLevelWindowVisual.GetAddressOf(), &topLevelWindowThumbnail)
+    '	End If
+
+    '                  If (Not CreateBackdrop(hwnd, BACKDROP_SOURCE_DESKTOP) OrElse hr <> S_OK) Then
+    '                      Return False
+    '                  End If
+    '                  Dim hwndExclusionList(1) As IntPtr
+    '                  hwndExclusionList(0) = IntPtr(0)
+
+    '                  If (GetBuildVersion() >= 20000) Then
+    '                      hr = DwmUpdateSharedMultiWindowVisual(topLevelWindowThumbnail, Nothing, 0, hwndExclusionList, 1, sourceRect, destinationSize, 1)
+    '                  Else
+    '                      hr = DwmUpdateSharedVirtualDesktopVisual(topLevelWindowThumbnail, Nothing, 0, hwndExclusionList, 1, sourceRect, destinationSize)
+    '                  End If
+
+    '                  If (hr <> S_OK) Then
+    '                      Return False
+    '                  End If
+
+    '          End Select
+    '          Return True
+    '      End Function
+
+    '      Function CreateEffectGraph(dcompDevice3 As ComPtr<IDCompositionDevice3> ) As Boolean
+    '          If (dcompDevice3.CreateGaussianBlurEffect(blurEffect.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+    '          If (dcompDevice3.CreateSaturationEffect(saturationEffect.GetAddressOf()) <> S_OK) Then
+    '              Return False
+    '          End If
+    '          If (dcompDevice3.CreateTranslateTransform(translateTransform) <> S_OK) Then
+    '              Return False
+    '          End If
+    '          If (dcompDevice3.CreateRectangleClip(clip) <> S_OK) Then
+    '              Return False
+    '          End If
+    '          Return True
+    '      End Function
+
+    '      Sub SyncCoordinates(hwnd As IntPtr)
+    '          GetWindowRect(hwnd, hostWindowRect)
+    '          clip.SetLeft(CSng(hostWindowRect.Left))
+    '          clip.SetRight(CSng(hostWindowRect.Right))
+    '          clip.SetTop(CSng(hostWindowRect.Top))
+    '          clip.SetBottom(CSng(hostWindowRect.Bottom))
+    '          rootVisual.SetClip(clip.Get())
+    '          translateTransform.SetOffsetX(-1 * CSng(hostWindowRect.Left) - (GetSystemMetrics(SM_CYFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)))
+    '          translateTransform.SetOffsetY(-1 * CSng(hostWindowRect.Top) - (GetSystemMetrics(SM_CYFRAME) + GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CXPADDEDBORDER)))
+    '          rootVisual.SetTransform(translateTransform.Get())
+    '          Commit()
+    '          DwmFlush()
+    '      End Sub
+
+    '      Function Sync(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, active As Boolean) As Boolean
+
+    '          Select Case msg
+
+    '              Case WM_ACTIVATE
+    '                  SyncFallbackVisual(active)
+    '                  Flush()
+    '                  Return True
+    '              Case WM_WINDOWPOSCHANGED
+    '                  SyncCoordinates(hwnd)
+    '                  Return True
+    '              Case WM_CLOSE
+    '                  Erase hwndExclusionList
+    '                  Return True
+    '          End Select
+    '          Return False
+    '      End Function
+
+    '      Function Flush() As Boolean
+    '          If (topLevelWindowThumbnail IsNot Nothing) Then
+    '              If (GetBuildVersion() >= 20000) Then
+    '                  DwmUpdateSharedMultiWindowVisual(topLevelWindowThumbnail, Nothing, 0, hwndExclusionList, 1, sourceRect, destinationSize, 1)
+    '              Else
+    '                  DwmUpdateSharedVirtualDesktopVisual(topLevelWindowThumbnail, Nothing, 0, hwndExclusionList, 1, sourceRect, destinationSize)
+    '              End If
+    '              DwmFlush()
+    '          End If
+    '          Return True
+    '      End Function
+
+    '      Function Commit() As Boolean
+    '          If (dcompDevice.Commit() <> S_OK) Then
+    '              Return False
+    '          End If
+    '          Return True
+    '      End Function
+
+    '      Sub SyncFallbackVisual(active As Boolean)
+    '          If (Not active) Then
+    '              fallbackBrush.SetColor(fallbackColor)
+    '          Else
+    '              fallbackBrush.SetColor(tintColor)
+    '          End If
+
+    '          deviceContext.BeginDraw()
+    '          deviceContext.Clear()
+    '          deviceContext.FillRectangle(fallbackRect, fallbackBrush.Get())
+    '          deviceContext.EndDraw()
+    '          swapChain.Present(1, 0)
+    '      End Sub
+    '  End Class
+
+End Class

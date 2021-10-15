@@ -48,19 +48,21 @@ Public Class NewUIListItem
         Public CloseMenu As Boolean = True
         Public Handled As Boolean = True
         Public CloseAllMenu As Boolean = False
+
         Public Sub New()
 
         End Sub
         Public Sub New(a As NewUIListItemClickedEvent)
-            Me.New
+            Me.New()
             Me.CloseMenu = a.CloseMenu
             Me.Handled = a.Handled
         End Sub
     End Class
     Protected Overrides Sub OnClick(e As EventArgs)
-        PerformClick(e)
+        PerformClick(Nothing)
     End Sub
     Public Sub PerformClick(ByVal e As NewUIListItemClickedEvent)
+        If e Is Nothing Then e = New NewUIListItemClickedEvent()
         If ClickHandler IsNot Nothing Then
 
             ClickHandler.Invoke(Me, e)

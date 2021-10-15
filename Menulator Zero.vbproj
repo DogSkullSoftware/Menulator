@@ -70,6 +70,9 @@
     <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -128,6 +131,9 @@
       <DependentUpon>frmMsg.vb</DependentUpon>
     </Compile>
     <Compile Include="frmMsg.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmPopup.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="JoyApi\JoyApi.vb" />
@@ -198,6 +204,9 @@
     <EmbeddedResource Include="frmMsg.resx">
       <DependentUpon>frmMsg.vb</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="frmPopup.resx">
+      <DependentUpon>frmPopup.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>
@@ -224,6 +233,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="MainMenu\MainMenu.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
     <None Include="My Project\app.manifest" />
     <None Include="My Project\Application.myapp">
       <Generator>MyApplicationCodeGenerator</Generator>
@@ -243,6 +255,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Resources\MAME.png" />
   </ItemGroup>
   <ItemGroup>
@@ -463,6 +476,27 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="m.ico" />
+    <None Include="Resources\icons8-triple-arrows-32_white.png" />
+    <None Include="Resources\icons8-triple-arrows-32.png" />
+    <None Include="Resources\icons8-stop-32_white.png" />
+    <None Include="Resources\icons8-stop-32.png" />
+    <None Include="Resources\icons8-skip-to-start-32_white.png" />
+    <None Include="Resources\icons8-skip-to-start-32.png" />
+    <None Include="Resources\icons8-repeat-32_white.png" />
+    <None Include="Resources\icons8-repeat-32.png" />
+    <None Include="Resources\icons8-play-32_white.png" />
+    <None Include="Resources\icons8-play-32.png" />
+    <None Include="Resources\icons8-pause-32_white.png" />
+    <None Include="Resources\icons8-pause-32.png" />
+    <None Include="Resources\icons8-end-32_white.png" />
+    <None Include="Resources\icons8-end-32.png" />
+    <None Include="Resources\icons8-concert-day-64_white.png" />
+    <None Include="Resources\icons8-concert-day-64.png" />
+    <None Include="Resources\cd-64.png" />
+    <None Include="Resources\211876_play_icon.png" />
+    <None Include="Resources\audio-file-64.png" />
+    <None Include="Resources\music-2-64.png" />
+    <None Include="Resources\music-2-xxl.png" />
     <None Include="Resources\toasty.wav" />
     <None Include="Resources\DanForden.png" />
     <None Include="Resources\joystick.png" />
@@ -475,6 +509,17 @@
     <None Include="Resources\240px-Wii_console.png" />
     <None Include="Resources\controls_pause_32.png" />
     <None Include="Resources\icons8-window-settings-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="WMPLib">
+      <Guid>{6BF52A50-394A-11D3-B153-00C04F79FAA6}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

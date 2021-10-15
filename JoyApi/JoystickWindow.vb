@@ -37,16 +37,26 @@ Public Class JoyStickWindow
     Public Event JoyStickPoll As EventHandler(Of Joystick.JoyStickChangedArgs)
 
     Public Property StopPolling As Boolean = False
+    Shared Sub New()
+        Dim e = Joystick.JoyManager.EnumerateDevices()
+
+        Controllers = New Dictionary(Of Integer, Joystick)
+        For Each joy In e
+            Controllers.Add(joy.Value.JoyID, New Joystick(joy.Value.JoyID))
+        Next
+    End Sub
+
+
     Public Sub New()
         MyBase.New
         If Me.DesignMode Then Return
         Try
-            Dim e = Joystick.JoyManager.EnumerateDevices()
+            'Dim e = Joystick.JoyManager.EnumerateDevices()
 
-            Controllers = New Dictionary(Of Integer, Joystick)
-            For Each joy In e
-                Controllers.Add(joy.Value.JoyID, New Joystick(joy.Value.JoyID))
-                With Controllers(joy.Value.JoyID)
+            'Controllers = New Dictionary(Of Integer, Joystick)
+            For Each joy In Controllers
+                ' Controllers.Add(joy.Value.JoyID, New Joystick(joy.Value.JoyID))
+                With Controllers(joy.Value.joyIndex)
                     AddHandler .JoyStickAxisDown, AddressOf OnJoyStickAxisDown
                     AddHandler .JoyStickAxisPress, AddressOf OnJoyStickAxisPress
                     AddHandler .JoyStickAxisUp, AddressOf OnJoyStickAxisUp
@@ -74,24 +84,24 @@ Public Class JoyStickWindow
             Next
         End If
     End Sub
-    Private Sub MyTimer(HWND As IntPtr, message As Integer, idTimer As IntPtr, dwTime As Integer)
-        'Static lastTimestamp As Long = WinmmApi.Joystick.NativeMethods.GetTickCount64
-        'Static Counter As Integer = 0
-        'Static PPS(100) As Double
-        'PPS(Counter) = e.TimeStamp - lastTimestamp
-        'Me.Text = Math.Round(PPS.Average, 2)
-        'PollsPerSecondAvg = Math.Round(PPS.Average, 0)
-        'Counter += 1
-        'If Counter > 100 Then Counter = 0
-        'lastTimestamp = e.TimeStamp
-        If Controllers IsNot Nothing Then
-            OnJoyStickPrePoll(Me, Nothing)
-            For Each joy In Controllers
-                joy.Value.Poll()
-            Next
-        End If
+    'Private Sub MyTimer(HWND As IntPtr, message As Integer, idTimer As IntPtr, dwTime As Integer)
+    '    'Static lastTimestamp As Long = WinmmApi.Joystick.NativeMethods.GetTickCount64
+    '    'Static Counter As Integer = 0
+    '    'Static PPS(100) As Double
+    '    'PPS(Counter) = e.TimeStamp - lastTimestamp
+    '    'Me.Text = Math.Round(PPS.Average, 2)
+    '    'PollsPerSecondAvg = Math.Round(PPS.Average, 0)
+    '    'Counter += 1
+    '    'If Counter > 100 Then Counter = 0
+    '    'lastTimestamp = e.TimeStamp
+    '    If Controllers IsNot Nothing Then
+    '        OnJoyStickPrePoll(Me, Nothing)
+    '        For Each joy In Controllers
+    '            joy.Value.Poll()
+    '        Next
+    '    End If
 
-    End Sub
+    'End Sub
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
@@ -161,6 +171,22 @@ Public Class JoyStickWindow
         Dim ret = JoyApi.Joystick.NativeMethods.joySetCapture(Me.Handle, 0, 10, -1)
     End Sub
     Protected Overrides Sub OnHandleDestroyed(e As EventArgs)
+        For Each joy In Controllers
+            ' Controllers.Add(joy.Value.JoyID, New Joystick(joy.Value.JoyID))
+            With Controllers(joy.Value.joyIndex)
+                RemoveHandler .JoyStickAxisDown, AddressOf OnJoyStickAxisDown
+                RemoveHandler .JoyStickAxisPress, AddressOf OnJoyStickAxisPress
+                RemoveHandler .JoyStickAxisUp, AddressOf OnJoyStickAxisUp
+                RemoveHandler .JoyStickButtonDown, AddressOf OnJoyStickButtonDown
+                RemoveHandler .JoyStickButtonPress, AddressOf OnJoyStickButtonPress
+                RemoveHandler .JoyStickButtonUp, AddressOf OnJoyStickButtonUp
+                RemoveHandler .JoystickChanged, AddressOf OnJoystickChanged
+                RemoveHandler .JoyStickPOVDown, AddressOf OnJoyStickPOVDown
+                RemoveHandler .JoyStickPOVPress, AddressOf OnJoyStickPOVPress
+                RemoveHandler .JoyStickPOVUp, AddressOf OnJoyStickPOVUp
+                RemoveHandler .JoystickChanged, AddressOf OnJoyStickPoll
+            End With
+        Next
         MyBase.OnHandleDestroyed(e)
         JoyApi.Joystick.NativeMethods.joyReleaseCapture(0)
     End Sub

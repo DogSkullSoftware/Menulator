@@ -188,7 +188,7 @@ Public Class Win32SystemIcons
 
     Dim _Path As String
     Dim fi As New SHFILEINFOW
-    Public Function GetIcon(ByVal LargeIco As Boolean) As Bitmap
+    Public Function GetIcon(ByVal LargeIco As Boolean, minWidth As Integer, minHeight As Integer) As Bitmap
         Dim bm As Bitmap
         If LargeIco Then
 
@@ -205,18 +205,35 @@ Public Class Win32SystemIcons
             Dim hIcon As IntPtr
             iml.GetIcon(iconindex, 1, hIcon)
             bm = System.Drawing.Icon.FromHandle(hIcon).ToBitmap
+            If bm.Width < minWidth Or bm.Height < minHeight Then
+                Using b As New Bitmap(minWidth, minHeight, Imaging.PixelFormat.Format32bppArgb)
+                    Using g = Drawing.Graphics.FromImage(b)
+                        g.CompositingQuality = Drawing2D.CompositingQuality.HighQuality
+                        g.CompositingMode = Drawing2D.CompositingMode.SourceOver
+                        g.InterpolationMode = Drawing2D.InterpolationMode.Bicubic
+                        g.PixelOffsetMode = Drawing2D.PixelOffsetMode.HighQuality
+                        g.SmoothingMode = Drawing2D.SmoothingMode.HighQuality
+
+
+
+                        g.DrawImage(bm, New RectangleF(0, 0, minWidth, minHeight))
+                    End Using
+                End Using
+            End If
             DestroyIcon(hIcon)
 
 
-        Else
-            SHGetFileInfoW(_Path, 0, fi, Marshal.SizeOf(fi), ShellGetFileInfoFlags.SHGFI_ICON Or ShellGetFileInfoFlags.SHGFI_SMALLICON Or ShellGetFileInfoFlags.SHGFI_ADDOVERLAYS)
+            Else
+                SHGetFileInfoW(_Path, 0, fi, Marshal.SizeOf(fi), ShellGetFileInfoFlags.SHGFI_ICON Or ShellGetFileInfoFlags.SHGFI_SMALLICON Or ShellGetFileInfoFlags.SHGFI_ADDOVERLAYS)
 
-            bm = Icon.FromHandle(fi.hIcon).ToBitmap
-            DestroyIcon(fi.hIcon)
-        End If
-        Return bm
+                bm = Icon.FromHandle(fi.hIcon).ToBitmap
+                DestroyIcon(fi.hIcon)
+            End If
+            Return bm
     End Function
-
+    Public Function GetIcon(ByVal LargeIco As Boolean) As Bitmap
+        Return GetIcon(LargeIco, 0, 0)
+    End Function
 
 
     Public Sub New(sPath As String)

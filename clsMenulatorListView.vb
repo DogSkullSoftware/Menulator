@@ -24,6 +24,37 @@ Public Class MenulatorListView
     End Class
     Public Event IndexRangechanged As EventHandler(Of GameRangeArgs)
     Public Event NeedInvalidate()
+    'Public Event OnClickCallback As EventHandler(Of EventArgs)
+    'Dim _OnClick As EventHandler(Of EventArgs) = Nothing
+    Dim _onClickCallback As EventHandler(Of NewUIListItem.NewUIListItemClickedEvent)
+    Public Property ClickCallback As EventHandler(Of NewUIListItem.NewUIListItemClickedEvent)
+        Get
+            Return _onClickCallback
+        End Get
+        Set(value As EventHandler(Of NewUIListItem.NewUIListItemClickedEvent))
+            _onClickCallback = value
+        End Set
+    End Property
+
+    Protected Friend Sub onClickCallback(e As NewUIListItem.NewUIListItemClickedEvent)
+        If _onClickCallback IsNot Nothing Then
+            _onClickCallback.Invoke(Me, e)
+        End If
+    End Sub
+    Dim _onBackCallback As EventHandler(Of NewUIListItem.NewUIListItemClickedEvent)
+    Public Property BackCallback As EventHandler(Of NewUIListItem.NewUIListItemClickedEvent)
+        Get
+            Return _onBackCallback
+        End Get
+        Set(value As EventHandler(Of NewUIListItem.NewUIListItemClickedEvent))
+            _onBackCallback = value
+        End Set
+    End Property
+    Protected Friend Sub onBackCallback(e As NewUIListItem.NewUIListItemClickedEvent)
+        If _onBackCallback IsNot Nothing Then
+            _onBackCallback.Invoke(Me, e)
+        End If
+    End Sub
 
     Dim l As IEnumerable(Of IRom)
     Public Enum BitBucketState As Byte
@@ -62,6 +93,7 @@ Public Class MenulatorListView
         Set(value As IEnumerable(Of IRom))
             Dump()
             l = value
+            Index = 0
             Page = 0
         End Set
     End Property
@@ -91,6 +123,13 @@ Public Class MenulatorListView
         _Index = -1
         _page = -1
         'm = Nothing
+    End Sub
+    Public Sub Reset()
+        Dump()
+        _onBackCallback = Nothing
+        _onClickCallback = Nothing
+        SetDefaultGameIcon(Nothing)
+
     End Sub
     'Private SuppressEvents As Boolean = False
     'Private ItemLocateRect As Rectangle
@@ -158,7 +197,7 @@ Public Class MenulatorListView
         End Get
     End Property
 
-
+#Region "Wait"
     Dim _enableWait As Boolean
     Dim _spinThread As Threading.Thread
     Dim _Multi As Single = 2
@@ -174,7 +213,7 @@ Public Class MenulatorListView
                 'StartSpin()
                 fAngle = 0
                 If _spinThread Is Nothing Then
-                    _spinThread = New Threading.Thread(AddressOf DoWork)
+                    _spinThread = New Threading.Thread(AddressOf DoSpin)
                     _spinThread.Start()
                     waiter.Set()
                 Else
@@ -200,7 +239,7 @@ Public Class MenulatorListView
         'busy_back.Dispose()
         'busy_front.Dispose()
     End Sub
-    Protected Sub DoWork(o As Object)
+    Protected Sub DoSpin(o As Object)
         'If Threading.Monitor.TryEnter(ParentInternal.RenderLock) Then
         Do
             Try
@@ -234,6 +273,9 @@ Public Class MenulatorListView
         If zAngle > 360.0F Then zAngle = 0.0F
         Return zAngle
     End Function
+#End Region
+
+
     Dim _v As Point
     Public Property VisualOffset As Point
         Get
@@ -361,9 +403,10 @@ Public Class MenulatorListView
                     If x2 = _AppsMenuIndex Then
                         e.Graphics.FillRectangle(iconH, New Rectangle(menu_r.X, menu_r.Y, menu_r.Width, menu_r.Height + 2))
                     End If
+                If AppsMenu(x2).Image IsNot Nothing Then
                     e.Graphics.DrawImage(AppsMenu(x2).Image, ScaleRect(AppsMenu(x2).Image.Size, New Rectangle(menu_r.X + 5, menu_r.Y + 2, 32, 32)))
-
-                    e.Graphics.DrawString(AppsMenu(x2).Text, Me.Font, Brushes.Black, New Rectangle(menu_r.X + 5 + 5 + 32, menu_r.Y + 2, menu_r.Width - 5 - 5 - 32, menu_r.Height))
+                End If
+                e.Graphics.DrawString(AppsMenu(x2).Text, Me.Font, Brushes.Black, New Rectangle(menu_r.X + 5 + 5 + 32, menu_r.Y + 2, menu_r.Width - 5 - 5 - 32, menu_r.Height))
                     menu_r.Y += 32 + 4
                 Next
             End If
@@ -626,6 +669,19 @@ theend:
     End Property
 
 
+    Protected Overrides Function ProcessDialogChar(charCode As Char) As Boolean
+        'Return MyBase.ProcessDialogChar(charCode)
+        Return False
+    End Function
+    Protected Overrides Function ProcessDialogKey(keyData As Keys) As Boolean
+        'Return MyBase.ProcessDialogKey(keyData)
+        Return False
+    End Function
+    Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
+        'Return MyBase.ProcessCmdKey(msg, keyData)
+        Return False
+    End Function
+
     Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
         Select Case e.KeyCode
             Case Keys.Right
@@ -662,7 +718,7 @@ theend:
 
             Case Keys.Return
                 If _AppsMenuParentIndex <> -1 Then
-                    Dim result As New NewUIListItem.NewUIListItemClickedEvent
+                    Dim result As New NewUIListItem.NewUIListItemClickedEvent()
                     AppsMenu(_AppsMenuIndex).PerformClick(result)
                     If result.CloseMenu Then
                         _AppsMenuParentIndex = -1
@@ -670,6 +726,10 @@ theend:
                         Refresh()
                     End If
                     e.Handled = True
+                ElseIf _onClickCallback IsNot Nothing Then
+                    Dim ec As New NewUIListItem.NewUIListItemClickedEvent
+                    onClickCallback(ec)
+                    e.Handled = ec.Handled
                 End If
             Case Keys.Apps
                 If _AppsMenu IsNot Nothing Then
@@ -683,6 +743,12 @@ theend:
 
                     Refresh()
                     e.Handled = True
+                End If
+            Case Keys.Back
+                If _onBackCallback IsNot Nothing Then
+                    Dim ec As New NewUIListItem.NewUIListItemClickedEvent
+                onBackCallback(ec)
+                    e.Handled = ec.Handled
                 End If
             Case Keys.PageDown
                 If _AppsMenuParentIndex = -1 Then
@@ -720,15 +786,7 @@ theend:
 
         End Select
     End Sub
-    Protected Overrides Function IsInputKey(keyData As Keys) As Boolean
-        Return False
-    End Function
-    Public Overrides Function PreProcessMessage(ByRef msg As Message) As Boolean
-        Return False
-    End Function
-    Protected Overrides Function ProcessDialogKey(keyData As Keys) As Boolean
-        Return False
-    End Function
+
 
 
     Dim danlocate As Point

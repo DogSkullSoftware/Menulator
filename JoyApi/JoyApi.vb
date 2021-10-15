@@ -70,10 +70,12 @@ Partial Public Class JoyApi
         Public Class JoyStickChangedArgs
             Inherits EventArgs
 
+            Public ReadOnly JoyID As Integer
             Public ReadOnly TimeStamp As Long
             Public RawJoyInfo As NativeMethods.JOYINFOEX
             Public PrevJoyInfo As NativeMethods.JOYINFOEX
-            Friend Sub New(current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX)
+            Friend Sub New(joyID As Integer, current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX)
+                Me.JoyID = joyID
                 TimeStamp = NativeMethods.GetTickCount64
                 RawJoyInfo = current
                 PrevJoyInfo = prev
@@ -81,96 +83,51 @@ Partial Public Class JoyApi
         End Class
 
         Public Class JoyStickAxisEventArgs
-            Inherits EventArgs
-
-            Public ReadOnly TimeStamp As Long
-            Public RawJoyInfo As NativeMethods.JOYINFOEX
-            Public prevJoyInfo As NativeMethods.JOYINFOEX
+            Inherits JoyStickChangedArgs
             Public ReadOnly Property AxisID As Integer
             Public ReadOnly Property Value As Integer
-
             Public ReadOnly Property Elapsed As Long
             Public Property Handled As Boolean
 
-            Friend Sub New(current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, axisID As Integer, value As Integer, elapsed As Long)
-                Me.prevJoyInfo = prev
-                TimeStamp = NativeMethods.GetTickCount64
-                RawJoyInfo = current
+            Friend Sub New(joyid As Integer, current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, axisID As Integer, value As Integer, elapsed As Long)
+                MyBase.New(joyid, current, prev)
                 Me.AxisID = axisID
                 Me.Value = value
-
                 Me.Elapsed = elapsed
             End Sub
-
-
         End Class
         Public Class JoyStickAxisPressEventArgs
-            Inherits EventArgs
+            Inherits JoyStickAxisEventArgs
 
-            Public ReadOnly TimeStamp As Long
-            Public RawJoyInfo As NativeMethods.JOYINFOEX
-            Public prevJoyInfo As NativeMethods.JOYINFOEX
-            Public ReadOnly Property AxisID As Integer
-            Public ReadOnly Property Value As Integer
-
-            Public ReadOnly Property Elapsed As Long
             Public ReadOnly Property Counter As Integer
-            Public Property Handled As Boolean
-            Friend Sub New(current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, axisID As Integer, value As Integer, elapsed As Long, accumulator As Integer)
-                TimeStamp = NativeMethods.GetTickCount64
-                Me.prevJoyInfo = prev
-                RawJoyInfo = current
-                Me.AxisID = axisID
-                Me.Value = value
-
-                Me.Elapsed = elapsed
+            Friend Sub New(joyid As Integer, current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, axisID As Integer, value As Integer, elapsed As Long, accumulator As Integer)
+                MyBase.New(joyid, current, prev, axisID, value, elapsed)
                 Me.Counter = accumulator
             End Sub
         End Class
 
         Public Class JoyStickButtonEventArgs
-            Inherits EventArgs
+            Inherits JoyStickChangedArgs
 
-            Public ReadOnly TimeStamp As Long
-            Public RawJoyInfo As NativeMethods.JOYINFOEX
-            Public prevJoyInfo As NativeMethods.JOYINFOEX
             Public ReadOnly Property buttonID As Integer
             Public ReadOnly Property Value As Integer
 
             Public ReadOnly Property Elapsed As Long
             Public Property Handled As Boolean
-            Friend Sub New(current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, buttonID As Integer, value As Integer, elapsed As Long)
-                TimeStamp = NativeMethods.GetTickCount64
-                Me.prevJoyInfo = prev
-                RawJoyInfo = current
+
+            Friend Sub New(joyid As Integer, current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, buttonID As Integer, value As Integer, elapsed As Long)
+                MyBase.New(joyid, current, prev)
                 Me.buttonID = buttonID
                 Me.Value = value
-
                 Me.Elapsed = elapsed
             End Sub
-
-
         End Class
         Public Class JoyStickButtonPressEventArgs
-            Inherits EventArgs
-
-            Public ReadOnly TimeStamp As Long
-            Public RawJoyInfo As NativeMethods.JOYINFOEX
-            Public prevJoyIndo As NativeMethods.JOYINFOEX
-            Public ReadOnly Property ButtonID As Integer
-            Public ReadOnly Property Value As Integer
-            Public ReadOnly Property Elapsed As Long
+            Inherits JoyStickButtonEventArgs
             Public ReadOnly Property Counter As Integer
-            Public Property Handled As Boolean
 
-            Friend Sub New(current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, buttonID As Integer, value As Integer, elapsed As Long, accumulator As Integer)
-                TimeStamp = NativeMethods.GetTickCount64
-                Me.prevJoyIndo = prev
-                RawJoyInfo = current
-                Me.ButtonID = buttonID
-                Me.Value = value
-
-                Me.Elapsed = elapsed
+            Friend Sub New(joyid As Integer, current As NativeMethods.JOYINFOEX, prev As NativeMethods.JOYINFOEX, buttonID As Integer, value As Integer, elapsed As Long, accumulator As Integer)
+                MyBase.New(joyid, current, prev, buttonID, value, elapsed)
                 Me.Counter = accumulator
             End Sub
         End Class
@@ -232,10 +189,10 @@ Partial Public Class JoyApi
             Public Class JoyCapsEX
                 Dim _base As JOYCAPS
 
-                Friend Sub New(j As JOYCAPS, jID As Integer, OEMName As String, GUID As Guid)
+                Friend Sub New(j As JOYCAPS, jID As Integer, OEMName As String, DevID As String)
                     _base = j
                     _Name = OEMName
-                    _GUID = GUID
+                    _DevID = Me.DevID
                     _JoyID = jID
                     Dim r As New List(Of Range)
                     With _base
@@ -282,7 +239,7 @@ Partial Public Class JoyApi
                     End Get
                 End Property
                 Public ReadOnly Property AxesRange As Range()
-                Public ReadOnly Property GUID As Guid
+                Public ReadOnly Property DevID As String
                 Public ReadOnly Property PeriodRange As Range
                     Get
                         Return New Range(_base.wPeriodMin, _base.wPeriodMax)
@@ -706,7 +663,7 @@ Partial Public Class JoyApi
                 For t As Integer = 0 To MaxJoyCount
                     Dim j = New NativeMethods.JOYCAPS
                     Dim OEMName As String = ""
-                    Dim JoyGUID As Guid = Guid.Empty
+                    Dim JoyDevID As String = ""
 
 
                     If NativeMethods.joyGetDevCaps(t, j, Marshal.SizeOf(GetType(NativeMethods.JOYCAPS))) = NativeMethods.MMSYSERR.MMSYSERR_NOERROR Then
@@ -719,21 +676,24 @@ Partial Public Class JoyApi
                             OEMName = reg.GetValue("OEMName")
 
 
-                            Dim subkeynames = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\" & joyRegName & "\Calibration").GetSubKeyNames
-                            If UBound(subkeynames) = 0 Then
-                                reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\" & joyRegName & "\Calibration\0")
-                            Else
-                                reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\" & joyRegName & "\Calibration\" & t)
+                            'Dim subkeynames = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\" & joyRegName & "\Calibration").GetSubKeyNames
+                            'If UBound(subkeynames) = 0 Then
+                            '    reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\" & joyRegName & "\Calibration\0")
+                            'Else
+                            '    reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\" & joyRegName & "\Calibration\" & t)
 
-                            End If
-                            'Dim z = reg.GetValue("GUID")
-                            JoyGUID = New Guid(CType(reg.GetValue("GUID"), Byte()))
+                            'End If
+                            ''Dim z = reg.GetValue("GUID")
+                            'If reg IsNot Nothing Then JoyGUID = New Guid(CType(reg.GetValue("GUID"), Byte()))
+
+
+                            JoyDevID = joyRegName
                         Catch
                         Finally
                             If reg IsNot Nothing Then reg.Dispose()
                         End Try
 
-                        ret.Add(t, New NativeMethods.JoyCapsEX(j, t, OEMName, JoyGUID))
+                        ret.Add(t, New NativeMethods.JoyCapsEX(j, t, OEMName, JoyDevID))
                     End If
                 Next
                 Return ret
@@ -811,7 +771,8 @@ Partial Public Class JoyApi
             'If ret = NativeMethods.MMSYSERR.MMSYSERR_NOERROR Then
             joyinfo.StampIt()
             'If lastInfo <> joyinfo Then
-            RaiseEvent JoystickChanged(Me, New JoyStickChangedArgs(joyinfo, lastInfo))
+
+            RaiseEvent JoystickChanged(Me, New JoyStickChangedArgs(joyIndex, joyinfo, lastInfo))
             ' End If
 
             Dim elapsed As Double
@@ -823,13 +784,13 @@ Partial Public Class JoyApi
                 For x As Integer = 0 To 1
                     If isLeft And Not wasLeft Then
                         joyHistory.AxesTimestamp(axis) = joyinfo.dwReserved1
-                        Dim h = New JoyStickAxisEventArgs(joyinfo, lastInfo, axis, joyinfo.AxisValue(axis), joyHistory.AxesTimestamp(axis))
+                        Dim h = New JoyStickAxisEventArgs(joyIndex, joyinfo, lastInfo, axis, joyinfo.AxisValue(axis), joyHistory.AxesTimestamp(axis))
                         RaiseEvent JoyStickAxisDown(Me, h)
                         If h.Handled Then
                             joyHistory.AxesTimestamp(axis) = 0
                         End If
                     ElseIf Not isLeft AndAlso wasLeft Then
-                        RaiseEvent JoyStickAxisUp(Me, New JoyStickAxisEventArgs(joyinfo, lastInfo, axis, joyinfo.AxisValue(axis), joyHistory.AxesTimestamp(axis)))
+                        RaiseEvent JoyStickAxisUp(Me, New JoyStickAxisEventArgs(joyIndex, joyinfo, lastInfo, axis, joyinfo.AxisValue(axis), joyHistory.AxesTimestamp(axis)))
                         joyHistory.AxesCounter(axis) = 0
                         joyHistory.AxesTimestamp(axis) = 0
 
@@ -838,7 +799,7 @@ Partial Public Class JoyApi
                         elapsed = joyinfo.dwReserved1 - joyHistory.AxesTimestamp(axis)
                         If elapsed >= KeyboardDelay Then
                             If elapsed >= KeyboardRepeatSpeed * joyHistory.AxesCounter(axis) Then
-                                Dim h = New JoyStickAxisPressEventArgs(joyinfo, lastInfo, axis, joyinfo.AxisValue(axis), elapsed, joyHistory.AxesCounter(axis))
+                                Dim h = New JoyStickAxisPressEventArgs(joyIndex, joyinfo, lastInfo, axis, joyinfo.AxisValue(axis), elapsed, joyHistory.AxesCounter(axis))
                                 RaiseEvent JoyStickAxisPress(Me, h)
                                 joyHistory.AxesCounter(axis) += 1
                                 If h.Handled Then
@@ -861,13 +822,13 @@ Partial Public Class JoyApi
                     If joyinfo.dwPOV <> NativeMethods.JoyPOVDirections.JOY_POVCENTERED Then
                         joyHistory.POVTimestamp = joyinfo.dwReserved1
                         joyHistory.POVCounter = 0
-                        Dim h = New JoyStickButtonEventArgs(joyinfo, lastInfo, NativeMethods.JOY_RETURNPOV, joyinfo.dwPOV, joyHistory.POVTimestamp)
+                        Dim h = New JoyStickButtonEventArgs(joyIndex, joyinfo, lastInfo, NativeMethods.JOY_RETURNPOV, joyinfo.dwPOV, joyHistory.POVTimestamp)
                         RaiseEvent JoyStickPOVDown(Me, h)
                         If h.Handled Then
                             joyHistory.POVTimestamp = 0
                         End If
                     Else
-                        RaiseEvent JoyStickPOVUp(Me, New JoyStickButtonEventArgs(joyinfo, lastInfo, NativeMethods.JOY_RETURNPOV, joyinfo.dwPOV, joyHistory.POVTimestamp))
+                        RaiseEvent JoyStickPOVUp(Me, New JoyStickButtonEventArgs(joyIndex, joyinfo, lastInfo, NativeMethods.JOY_RETURNPOV, joyinfo.dwPOV, joyHistory.POVTimestamp))
                         joyHistory.POVTimestamp = 0
                         joyHistory.POVCounter = 0
                     End If
@@ -876,7 +837,7 @@ Partial Public Class JoyApi
                     elapsed = joyinfo.dwReserved1 - joyHistory.POVTimestamp
                     If elapsed >= KeyboardDelay Then
                         If elapsed >= KeyboardRepeatSpeed * joyHistory.POVCounter Then
-                            Dim h = New JoyStickButtonPressEventArgs(joyinfo, lastInfo, NativeMethods.JOY_RETURNPOV, joyinfo.dwPOV, elapsed, joyHistory.POVCounter)
+                            Dim h = New JoyStickButtonPressEventArgs(joyIndex, joyinfo, lastInfo, NativeMethods.JOY_RETURNPOV, joyinfo.dwPOV, elapsed, joyHistory.POVCounter)
                             RaiseEvent JoyStickPOVPress(Me, h)
                             joyHistory.POVCounter += 1
                             If h.Handled Then
@@ -892,13 +853,13 @@ Partial Public Class JoyApi
                 Dim eB = [Enum].Parse(GetType(JoyApi.Joystick.NativeMethods.JoyButtons), "JOY_BUTTON" & t + 1)
                 If joyinfo.IsButtonPressed(eB) AndAlso Not lastInfo.IsButtonPressed(eB) Then
                     joyHistory.ButtonTimestamp(t) = joyinfo.dwReserved1
-                    Dim h = New JoyStickButtonEventArgs(joyinfo, lastInfo, t, joyinfo.IsButtonPressed(t), elapsed)
+                    Dim h = New JoyStickButtonEventArgs(joyIndex, joyinfo, lastInfo, t, joyinfo.IsButtonPressed(t), elapsed)
                     RaiseEvent JoyStickButtonDown(Me, h)
                     If h.Handled Then
                         joyHistory.ButtonTimestamp(t) = 0
                     End If
                 ElseIf Not joyinfo.IsButtonPressed(eB) AndAlso lastInfo.IsButtonPressed(eB) Then
-                    RaiseEvent JoyStickButtonUp(Me, New JoyStickButtonEventArgs(joyinfo, lastInfo, t, joyinfo.dwYpos, elapsed))
+                    RaiseEvent JoyStickButtonUp(Me, New JoyStickButtonEventArgs(joyIndex, joyinfo, lastInfo, t, joyinfo.dwYpos, elapsed))
 
                     joyHistory.ButtonTimestamp(t) = 0
                     joyHistory.ButtonCounter(t) = 0
@@ -906,7 +867,7 @@ Partial Public Class JoyApi
                     elapsed = joyinfo.dwReserved1 - joyHistory.ButtonTimestamp(t)
                     If elapsed >= KeyboardDelay Then
                         If elapsed >= KeyboardRepeatSpeed * joyHistory.ButtonCounter(t) Then
-                            Dim h = New JoyStickButtonPressEventArgs(joyinfo, lastInfo, t, joyinfo.IsButtonPressed(t), elapsed, joyHistory.ButtonCounter(t))
+                            Dim h = New JoyStickButtonPressEventArgs(joyIndex, joyinfo, lastInfo, t, joyinfo.IsButtonPressed(t), elapsed, joyHistory.ButtonCounter(t))
                             RaiseEvent JoyStickButtonPress(Me, h)
                             joyHistory.ButtonCounter(t) += 1
                             If h.Handled Then
@@ -941,7 +902,7 @@ Partial Public Class JoyApi
                     'If lastInfo <> joyinfo Then
                     ' End If
                     joyinfo.StampIt()
-                    RaiseEvent JoystickChanged(Me, New JoyStickChangedArgs(joyinfo, lastInfo))
+                    RaiseEvent JoystickChanged(Me, New JoyStickChangedArgs(joyIndex, joyinfo, lastInfo))
                 Else
                     PollEx(joyinfo)
                 End If
